@@ -2,23 +2,20 @@
 File: Solver.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:44
-Last Modified: 2021-03-22 18:35
+Last Modified: 2021-03-23 17:16
 --------------------------------------------
 Description:
 '''
 import sys
 import os
-from llvmlite.ir.values import Value
 
-from numpy.lib import utils
 PACKAGE_PARENT = '../'
 SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
 sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
-
 import numpy as np
-from src.params import params
+import time
 import src.utils as utils
-import printUtils
+import src.naive.printUtils as printUtils
 
 
 class Solver:
@@ -43,45 +40,164 @@ class Solver:
                 y = x - s * gradfx
         return alpha
 
-    def update(self, x, gradfx, alpha, fvalx, rvalx):
+    def proximal_update(self, x, gradfx, alpha):
         self.bak = 0
         self.ipg_nnz, self.ipg_nz = None, None
-        while True:
-            xtrial = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
-                                   init_perturb=self.init_perturb,
-                                   t=self.t, mode=self.mode, seed=0)
-            # optional: get sparsity sturctures.
-            if self.prob.nz is not None:
-                self.pg_nz, self.pg_nnz = self.prob.nz, self.prob.nnz
-            if self.pg_nz is not None:
-                self.ipg_nnz = utils.get_group_structure(xtrial, self.prob.K, self.prob.starts, self.prob.ends)
-                self.ipg_nz = self.prob.K - self.ipg_nnz
 
+        self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
+                                    init_perturb=self.init_perturb,
+                                    t=self.t, mode=self.mode, seed=0, max_attempts=self.max_attempts)
+        # collect stats
+        self.prox_optim = utils.l2_norm(self.prob.xprox - x)
+        self.aprox_optim = utils.l2_norm(self.xaprox - x)
+        if self.xaprox is None:
+            # ipg solver failed
+            self.status = -2
+        # optional: get sparsity sturctures.
+        if self.prob.nz is not None:
+            self.pg_nz, self.pg_nnz = self.prob.nz, self.prob.nnz
+        if self.pg_nz is not None:
+            self.ipg_nnz = utils.get_group_structure(self.xaprox, self.prob.K, self.prob.starts, self.prob.ends)
+            self.ipg_nz = self.prob.K - self.ipg_nnz
+        self.d = self.xaprox - x
+        self.d_norm = utils.l2_norm(self.d)
+        self.d_norm_sq = self.d_norm ** 2
+        self.epsilon = self.prob.ck * self.d_norm_sq
+
+    def linesearch(self, x, alpha, fvalx, rvalx):
+        # backtrack linesearch
+        xtrial = x + self.d
+        fval_xtrial = self.prob.funcf(xtrial)
+        rval_xtrial = self.prob.funcr(xtrial)
+        const = -self.eta * (self.d_norm_sq / alpha - np.sqrt(2 * self.epsilon / alpha) * self.d_norm - self.epsilon)
+        # print(1 / alpha - np.sqrt(2 * self.prob.ck / alpha) - self.prob.ck)
+        # print(f"LHS:{self.t/(2*alpha)*self.prox_optim**2: 3.6e} | RHS:{self.d_norm_sq / alpha - np.sqrt(2 * self.epsilon / alpha) * self.d_norm - self.epsilon}")
+        self.stepsize = 1
+        while True:
+            # print(f"LHS:{fval_xtrial - fvalx + rval_xtrial - rvalx:3.3e} | RHS:{self.stepsize * const:3.3e} | stepsize:{self.stepsize:3.3e} | const:{const:3.3e}")
+            if (fval_xtrial - fvalx + rval_xtrial - rvalx) <= self.stepsize * const:
+                # print('===')
+                return xtrial, fval_xtrial, rval_xtrial
+            if self.bak == self.max_back:
+                # line search failed
+                self.status = -1
+                return None, None, None
+            self.bak += 1
+            self.stepsize *= self.xi
+            xtrial = x + self.stepsize * self.d
             fval_xtrial = self.prob.funcf(xtrial)
             rval_xtrial = self.prob.funcr(xtrial)
-            d = xtrial - x
-            d_norm = utils.l2_norm(d)
-            d_norm_sq = d_norm ** 2
-            epsilon = self.prob.ck * d_norm_sq
-            LHS = fval_xtrial + rval_xtrial - fvalx - rvalx
-            RHS = self.eta * (d_norm_sq / alpha - np.sqrt(2 * epsilon / alpha) * d_norm - epsilon)
 
-            if LHS <= RHS:
-                return xtrial, fval_xtrial, rval_xtrial, alpha
-            if self.bak == self.maxbak:
-                # line search failed
-                return None, None, None, None, None
+    def solve(self, x=None, alpha=None, explore=False):
+        if not x:
+            x = np.zeros((self.prob.p, 1))
+        if not alpha:
+            alpha = self.set_init_alpha(x)
+
+        # print algorithm params
+        outID = self.prob.f.datasetName
+        problem_attribute = self.prob.f.__str__()
+        problem_attribute += "Regularizer:{:.>44}\n".format(self.prob.r.__str__())
+        problem_attribute += "Penalty Parameter:{:.>30}lambda={:3.4f}\n".format('', self.prob.r.Lambda)
+        problem_attribute += "Number of groups:{:.>32}\n".format(self.prob.r.K)
+        if self.printlevel > 0:
+            printUtils.print_problem(problem_attribute, self.version, outID)
+            printUtils.print_algorithm(self.__dict__, outID)
+        # set up loggings
+        info = {}
+        iteration = 0
+        fevals = 0
+        gevals = 0
+        baks = 0
+        self.status = None
+        time_so_far = 0
+        if explore:
+            Fseq = []
+        iteration_start = time.time()
+        fvalx = self.prob.funcf(x)
+        rvalx = self.prob.funcr(x)
+        Fvalx = fvalx + rvalx
+        if explore:
+            Fseq.append(Fvalx)
+        gradfx = self.prob.gradf(x)
+        fevals += 1
+        gevals += 1
+        while True:
+            print_start = time.time()
+            if self.printlevel > 0:
+                if iteration % self.printevery == 0:
+                    printUtils.print_header(outID)
+                printUtils.print_iterates(iteration, Fvalx, outID)
+            print_cost = time.time() - print_start
+            # check termination
+            self.proximal_update(x, gradfx, alpha)
+            iteration_cost = time.time() - iteration_start - print_cost
+            time_so_far += iteration_cost
+            if self.printlevel > 0:
+                prox_diff = utils.l2_norm(self.xaprox - self.prob.xprox)
+                printUtils.print_proximal_update(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
+                                                 self.epsilon, prox_diff, self.prox_optim, self.aprox_optim,
+                                                 self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+            if iteration == 0:
+                tol = max(1, self.prox_optim) * self.tol
+            if self.prox_optim <= tol:
+                self.status = 0
+                break
+            if iteration >= self.max_iter:
+                self.status = 1
+                break
+            if time_so_far >= self.max_time:
+                self.status = 2
+                break
+            if self.status == -2:
+                break
+
+            iteration_start = time.time()
+            # linesearch
+            xtrial, fval_xtrial, rval_xtrial = self.linesearch(x, alpha, fvalx, rvalx)
+            fevals += (self.bak + 1)
+            baks += self.bak
+            temp = time.time()
+            if self.printlevel > 0:
+                printUtils.print_linesearch(self.bak, self.stepsize, outID)
+            print_cost = time.time() - temp
+            # update proximal gradient stepsize
             if self.update_alpha_strategy == 'frac':
-                alpha *= self.zeta
+                if self.bak > 0:
+                    alpha *= self.zeta
             elif self.update_alpha_strategy == 'model':
+                d = xtrial - x
+                d_norm_sq = utils.l2_norm(d) ** 2
                 dirder = np.dot(gradfx.T, d)[0][0]
                 actual_decrease = fval_xtrial - fvalx
                 L_local = 2 * (actual_decrease - dirder) / d_norm_sq
-                alpha = max(alpha * self.zeta, 1 / L_local)
+                alpha = max(1 / max(L_local, 1e-8), alpha * self.zeta)
             else:
                 raise ValueError(f'Invalid update_alpha_strategy: {self.update_alpha_strategy}')
-            self.bak += 1
 
-    def solve(self, x=None):
-        if not x:
-            x = np.zeros((self.prob.p, 1))
+            # perform update
+            iteration += 1
+            x = xtrial
+            fvalx = fval_xtrial
+            rvalx = rval_xtrial
+            Fvalx = fvalx + rvalx
+            gradfx = self.prob.gradf(x)
+            gevals += 1
+            # boost numerical performance if beta > 1
+            alpha *= self.beta
+            if explore:
+                Fseq.append(Fvalx)
+
+        info = {
+            'X': x, 'iteration': iteration, 'time': time_so_far, 'F': Fvalx,
+            'nz': self.ipg_nz, 'nnz': self.ipg_nnz, 'status': self.status,
+            'fevals': fevals, 'gevals': gevals, 'baks': baks, 'optim': self.prox_optim,
+            'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
+            'K': self.prob.K
+        }
+        if explore:
+            info['Fseq'] = Fseq
+        if self.printlevel > 0:
+            printUtils.print_exit(self.status, outID)
+            printUtils.print_result(info, outID)
+        return info

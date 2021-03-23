@@ -2,17 +2,17 @@
 File: params.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2019-10-31 15:51
-Last Modified: 2021-03-22 18:14
+Last Modified: 2021-03-23 15:21
 --------------------------------------------
 Description:
 '''
 from numpy import inf
 params = {}
 # termination
-params['tol'] = 1.0e-6
+params['tol'] = 1e-6
 params['max_iter'] = 10000
 params['max_time'] = 3600
-params['maxback'] = 100
+params['max_back'] = 100
 # prin'
 params['printlevel'] = 2
 params['printevery'] = 20
@@ -30,9 +30,9 @@ params['optimality_measure'] = 'prox'  # iterates
 
 params['inexact_strategy'] = 'sampling'
 # sample inexact proximal point
-params['max_attempts'] = 100
+params['max_attempts'] = 200
 params['warm_sampling'] = False
-params['init_perturb'] = 0.1
+params['init_perturb'] = 0
 params['t'] = 1
 params['mode'] = 'whole'
 

@@ -2,7 +2,7 @@
 File: ProbGL1.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 02:01
-Last Modified: 2021-03-22 18:23
+Last Modified: 2021-03-23 16:49
 --------------------------------------------
 Description:
 '''
@@ -16,6 +16,7 @@ from Problem import Problem
 import utils as utils
 import numpy as np
 from numba import jit
+import warnings
 
 
 class ProbGL1(Problem):
@@ -46,7 +47,8 @@ class ProbGL1(Problem):
             seed = kwargs['seed']
             max_attempts = kwargs['max_attempts']
             xprox, self.nz, self.nnz = self._pg(xk, gradfxk, alphak)
-            x = self._ipg_sample(xprox, gradfxk, alphak, init_perturb, max_attempts, t, mode, seed)
+            self.xprox = xprox
+            x = self._ipg_sample(xprox, xk, gradfxk, alphak, init_perturb, max_attempts, t, mode, seed)
         elif method == 'algorithm':
             raise ValueError(f'{method} is not implemented.')
         else:
@@ -56,18 +58,21 @@ class ProbGL1(Problem):
     def _ipg_sample(self, xprox, xk, gradfxk, alphak, init_perturb, max_attempts, t, mode, seed):
         self.seed = seed
         peturb = init_perturb
-        self.ck = (np.sqrt(6 / (1 + t) * alphak) - np.sqrt(2 / alphak)) ** 2 / 4
+        self.ck = (np.sqrt(6 / ((1 + t) * alphak)) - np.sqrt(2 / alphak)) ** 2 / 4
         attempt = 1
         while True:
             if attempt > max_attempts:
-                raise utils.AlgorithmError("_ipg_sample: cannot sample a (x,y) pair satisfying the gap condition!")
+                warnings.warn("_ipg_sample: cannot sample a (x,y) pair satisfying the gap condition!")
+                return None
             x, y = self._sample_primal_dual(xprox, xk, gradfxk, alphak, peturb, mode)
             diff = x - xk
             gap = self._duality_gap(x, y, xk, gradfxk, alphak)
             # print(f"gap:{gap} | target:{np.dot(diff.T, diff)[0][0]} | ck:{ck}")
             if gap <= self.ck * (np.dot(diff.T, diff)[0][0]):
                 self.attempt = attempt
+                # distance to the exact proximal point
                 self.peturb = peturb
+                self.gap = gap
                 return x
             peturb *= 0.8
             attempt += 1

@@ -2,7 +2,7 @@
 File: Problem.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 01:42
-Last Modified: 2021-03-22 11:46
+Last Modified: 2021-03-22 21:58
 --------------------------------------------
 Description:
 '''
@@ -16,7 +16,14 @@ class Problem(ABC):
         self.r = r
 
     @abstractclassmethod
-    def func(self, x):
+    def funcf(self, x):
+        """
+        function evaluation
+        """
+        pass
+
+    @abstractclassmethod
+    def funcr(self, x):
         """
         function evaluation
         """

@@ -1,0 +1,24 @@
+/*
+ * Filename: /Users/ym/Documents/StochasticGroupRegularizer/.vscode/launch.json
+ * Path: /Users/ym/Documents/StochasticGroupRegularizer/.vscode
+ * Created Date: Wednesday, March 3rd 2021, 9:52:55 pm
+ * Author: DYT
+ * 
+ * Copyright (c) 2021 Your Company
+ */
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${fileDirname}",
+            "console": "integratedTerminal"
+        }
+    ]
+}
