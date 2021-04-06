@@ -2,7 +2,7 @@
 File: utils.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-07-01 13:49
-Last Modified: 2021-03-22 16:47
+Last Modified: 2021-04-05 20:51
 --------------------------------------------
 Description:
 '''
@@ -15,6 +15,10 @@ from numba import jit
 
 def l2_norm(x):
     return np.sqrt(np.dot(x.T, x))[0][0]
+
+
+def linf_norm(x):
+    return np.max(np.abs(x))
 
 
 def set_up_xy(datasetName, fileType='txt', dbDir='../db', to_dense=False):
@@ -165,6 +169,18 @@ def get_partition(I_cg, I_pg, nonzeroGroup, nonzeroProxGroup, K):
     gI_pg = K - gI_cg
     nI_pg = np.sum(I_pg)
     return gI_cg, nI_cg, gI_pg, nI_pg
+
+
+def estimate_lipschitz(A, loss='logit'):
+    m, n = A.shape
+    if loss == 'ls':
+        hess = A.T @ A / m
+    elif loss == 'logit':
+        # acyually this is an upper bound on hess
+        hess = A.T @ A / (4 * m)
+    hess = hess.toarray()
+    L = np.max(np.linalg.eigvalsh(hess))
+    return L
 
 
 class AlgorithmError(Exception):

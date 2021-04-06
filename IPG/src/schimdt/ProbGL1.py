@@ -2,7 +2,7 @@
 File: ProbGL1.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 02:01
-Last Modified: 2021-04-05 22:08
+Last Modified: 2021-04-06 00:38
 --------------------------------------------
 Description:
 '''
@@ -37,60 +37,24 @@ class ProbGL1(Problem):
     def gradf(self, x):
         return self.f.gradient()
 
-    def ipg(self, xk, gradfxk, alphak, method, **kwargs):
-        # place holder in case the _pg method is not available
-        self.nz, self.nnz = None, None
-        if method == 'sampling':
-            init_perturb = kwargs['init_perturb']
-            epsilon_safeguard = kwargs['epsilon_safeguard']
-            t = kwargs['t']
-            mode = kwargs['mode']
-            seed = kwargs['seed']
-            max_attempts = kwargs['max_attempts']
-            xprox, self.nz, self.nnz = self._pg(xk, gradfxk, alphak)
-            # print(f"probGL1: xprox:{xprox.T}")
-            self.xprox = xprox
-            x = self._ipg_sample(xprox, xk, gradfxk, alphak, init_perturb, epsilon_safeguard, max_attempts, t, mode, seed)
-        elif method == 'algorithm':
-            raise ValueError(f'{method} is not implemented.')
-        else:
-            raise ValueError(f'{method} is not defined.')
-        # print(f"probGL1: x:{x.T}")
-        # print(f"xaprox-xprox:{utils.linf_norm(x-xprox)}")
-        return x
-
-    def _ipg_sample(self, xprox, xk, gradfxk, alphak, init_perturb, epsilon_safeguard, max_attempts, t, mode, seed):
+    def ipg(self, xk, gradfxk, alphak, epsilon, init_perturb, mode, seed, max_attempts):
         self.seed = seed
-        # print(self.seed)
+        xprox, self.nz, self.nnz = self._pg(xk, gradfxk, alphak)
+        self.xprox = xprox
         perturb = init_perturb
-        self.ck = (np.sqrt(6 / ((1 + t) * alphak)) - np.sqrt(2 / alphak)) ** 2 / 4
         attempt = 1
         while True:
             if attempt > max_attempts:
                 warnings.warn("_ipg_sample: cannot sample a (x,y) pair satisfying the gap condition!")
                 return None
             x, y = self._sample_primal_dual(xprox, xk, gradfxk, alphak, perturb, mode)
-            diff = x - xk
             gap = self._duality_gap(x, y, xk, gradfxk, alphak)
-            # print(f"gap:{gap:3.5e} | target:{self.ck * (np.dot(diff.T, diff)[0][0]):3.5e} | diff_norm:{np.dot(diff.T, diff)[0][0]:3.5e} | ck:{self.ck:3.5e}")
-            myepsilon = self.ck * (np.dot(diff.T, diff)[0][0])
-            if myepsilon <= epsilon_safeguard:
-                criterion = myepsilon
-                # adaptive epsilon
-                eflag = 'a'
-            else:
-                criterion = epsilon_safeguard
-                # safeguared epsilon
-                eflag = 's'
-            if gap <= criterion:
+            # print(f"gap:{gap:3.5e} | target:{epsilon:3.5e}")
+            if gap <= epsilon:
                 self.attempt = attempt
-                # distance to the exact proximal point
                 self.perturb = perturb
                 self.gap = gap
-                self.eflag = eflag
-                self.epsilon = criterion
-                # print(f"per:{perturb} | attempt:{attempt} | con:{0.8**(attempt-1)*init_perturb} ")
-                # print('==')
+                # print("=======")
                 return x
             perturb *= 0.8
             attempt += 1

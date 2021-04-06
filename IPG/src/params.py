@@ -2,7 +2,7 @@
 File: params.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2019-10-31 15:51
-Last Modified: 2021-03-23 15:21
+Last Modified: 2021-04-06 01:34
 --------------------------------------------
 Description:
 '''
@@ -25,16 +25,20 @@ params['zeta'] = 0.8
 # this trick is used in tfocs implementation
 # to boost numerical performance
 params['beta'] = 1  # 1 / 0.9
-params['update_alpha_strategy'] = 'frac'  # model
+params['update_alpha_strategy'] = 'none'  # model / none
 params['optimality_measure'] = 'prox'  # iterates
-
 params['inexact_strategy'] = 'sampling'
 # sample inexact proximal point
-params['max_attempts'] = 200
+params['max_attempts'] = 300
 params['warm_sampling'] = False
 params['init_perturb'] = 0
 params['t'] = 1
 params['mode'] = 'whole'
+# epsilon safeguard params
+params['safeguard_opt'] = 'schimdt'
+params['safeguard_const'] = 1
+# parameters for schimdt method
+params['delta'] = 1  # 1e-3
 
 
 fileTypeDict = {}
