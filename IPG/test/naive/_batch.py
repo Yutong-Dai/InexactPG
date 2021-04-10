@@ -38,8 +38,8 @@ def _unit_problem(directory, loss, lambda_shrinkage, percent, datasetName, param
         p = X.shape[1]
         num_of_groups = max(int(p * percent), 2)
         group = utils.gen_group(p, num_of_groups)
-        lammax_path = f'../../../db/lammax-{datasetName}-{percent}.mat'
-        Lip_path = f'../../../db/Lip-{datasetName}.mat'
+        lammax_path = f'{dbDir}/lammax-{datasetName}-{percent}.mat'
+        Lip_path = f'{dbDir}/Lip-{datasetName}.mat'
         if os.path.exists(lammax_path):
             lammax = loadmat(lammax_path)["lammax"][0][0]
             print(f"loading lammax from: {lammax_path}")
@@ -60,7 +60,7 @@ def _unit_problem(directory, loss, lambda_shrinkage, percent, datasetName, param
             savemat(Lip_path, {"L": L})
             print(f"save Lipschitz constant to: {Lip_path}")
         info = solver.solve(alpha=1 / L)
-        datasetid = "{}_{}_{}".format(datasetName, percent, lambda_shrinkage)
+        datasetid = "{}_{}_{}".format(datasetName, lambda_shrinkage, percent)
         info['datasetid'] = datasetid
         info_name = directory + "/{}_info.npy".format(datasetName)
         np.save(info_name, info)

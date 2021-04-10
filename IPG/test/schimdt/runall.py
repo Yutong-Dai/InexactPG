@@ -37,4 +37,6 @@ else:
                 'housing_scale', 'mg_scale', 'mpg_scale', 'pyrim_scale', 'space_ga_scale', 'blogData_train',
                 'UJIIndoorLoc', 'driftData', 'YearPredictionMSD', 'triazines_scale', 'virusShare']
 for percent in percents:
-    runall(args.date, 'schimdtPrescribe', args.loss, args.lam_shrink, percent, datasets, params, dbDir='../../../db')
+    # runall(args.date, 'schimdtPrescribe', args.loss, args.lam_shrink, percent, datasets, params, dbDir='../../../db')
+    # polyps
+    runall(args.date, 'schimdtPrescribe', args.loss, args.lam_shrink, percent, datasets, params, dbDir='../../../../GroupFaRSA/db')

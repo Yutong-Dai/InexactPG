@@ -136,7 +136,8 @@ class Solver:
                 printUtils.print_proximal_update_schimdt(alpha_old, self.alpha_update, self.attempts, self.prob.gap, self.epsilon,
                                                          prox_diff, self.prox_optim, self.aprox_optim,
                                                          self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
-             # check termination
+            fevals += (self.alpha_update + 1)
+            # check termination
             if iteration == 0:
                 tol = max(1, self.prox_optim) * self.tol
             if self.prox_optim <= tol:

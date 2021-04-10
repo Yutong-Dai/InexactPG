@@ -1,0 +1,8 @@
+#PBS -N adpative_logit_0.01_laststep_10
+#PBS -e /home/yud319/InexactPG/IPG/test/log/cache/adpative_logit_0.01_laststep_10.err
+#PBS -o /home/yud319/InexactPG/IPG/test/log/cache/adpative_logit_0.01_laststep_10.out
+#PBS -l nodes=1:ppn=4
+#PBS -l mem=8gb,vmem=8gb
+#PBS -q long
+cd /home/yud319/InexactPG/IPG/test/naive
+/home/yud319/anaconda3/bin/python runall.py --date 04_06_2021 --loss logit --lam_shrink 0.01 --safeguard_opt laststep --safeguard_const 10
