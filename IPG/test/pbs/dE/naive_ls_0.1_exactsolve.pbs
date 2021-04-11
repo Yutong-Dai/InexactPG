@@ -1,0 +1,8 @@
+#PBS -N naive_ls_0.1_exactsolve
+#PBS -e /home/yud319/InexactPG/IPG/test/log/cache/naive_ls_0.1_exactsolve.err
+#PBS -o /home/yud319/InexactPG/IPG/test/log/cache/naive_ls_0.1_exactsolve.out
+#PBS -l nodes=1:ppn=4
+#PBS -l mem=8gb,vmem=8gb
+#PBS -q long
+cd /home/yud319/InexactPG/IPG/test/preDifferentInexact
+/home/yud319/anaconda3/bin/python runall.py --date 04_10_2021 --solver naive --loss ls --lam_shrink 0.1 --init_perturb 0 --safeguard_opt const --safeguard_const 1000.0

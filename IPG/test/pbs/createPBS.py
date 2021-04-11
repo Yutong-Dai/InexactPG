@@ -29,33 +29,95 @@ def create(task_name, outdir, scriptdir, node, mem, file, *argv, pbsDir='.'):
 
 
 if __name__ == '__main__':
+    # outdir = "IPG/test/log/cache"
+    # scriptdir = "IPG/test/naive"
+    # for loss in ['logit', 'ls']:
+    #     for lam in [0.1, 0.01]:
+    #         for safeguard_opt in ['schimdt', 'laststep']:
+    #             for safeguard_const in [1, 10]:
+    #                 create(f'adpative_{loss}_{lam}_{safeguard_opt}_{safeguard_const}',
+    #                        outdir,
+    #                        scriptdir,
+    #                        '1', '8',
+    #                        'runall.py',
+    #                        '--date 04_06_2021',
+    #                        f'--loss {loss}',
+    #                        f'--lam_shrink {lam}',
+    #                        f'--safeguard_opt {safeguard_opt}',
+    #                        f'--safeguard_const {safeguard_const}',
+    #                        pbsDir='prelim')
+
+    # scriptdir = "IPG/test/schimdt"
+    # for lam in [0.1, 0.01]:
+    #     for loss in ['logit', 'ls']:
+    #         create(f'prescribe_{loss}_{lam}',
+    #                outdir,
+    #                scriptdir,
+    #                '1', '8',
+    #                'runall.py',
+    #                '--date 04_06_2021',
+    #                f'--loss {loss}',
+    #                f'--lam_shrink {lam}',
+    #                pbsDir='prelim')
+
     outdir = "IPG/test/log/cache"
-    scriptdir = "IPG/test/naive"
+    scriptdir = "IPG/test/preDifferentInexact"
     for loss in ['logit', 'ls']:
         for lam in [0.1, 0.01]:
             for safeguard_opt in ['schimdt', 'laststep']:
                 for safeguard_const in [1, 10]:
-                    create(f'adpative_{loss}_{lam}_{safeguard_opt}_{safeguard_const}',
+                    create(f'naive_{loss}_{lam}_{safeguard_opt}_{safeguard_const}',
                            outdir,
                            scriptdir,
                            '1', '8',
                            'runall.py',
-                           '--date 04_06_2021',
+                           '--date 04_10_2021',
+                           f'--solver naive',
                            f'--loss {loss}',
                            f'--lam_shrink {lam}',
                            f'--safeguard_opt {safeguard_opt}',
                            f'--safeguard_const {safeguard_const}',
-                           pbsDir='prelim')
-
-    scriptdir = "IPG/test/schimdt"
-    for lam in [0.1, 0.01]:
-        for loss in ['logit', 'ls']:
-            create(f'prescribe_{loss}_{lam}',
+                           pbsDir='dE')
+    for loss in ['logit', 'ls']:
+        for lam in [0.1, 0.01]:
+            safeguard_opt = 'const'
+            safeguard_const = 1e3
+            create(f'naive_{loss}_{lam}_{safeguard_opt}_{safeguard_const}',
                    outdir,
                    scriptdir,
                    '1', '8',
                    'runall.py',
-                   '--date 04_06_2021',
+                   '--date 04_10_2021',
+                   f'--solver naive',
                    f'--loss {loss}',
                    f'--lam_shrink {lam}',
-                   pbsDir='prelim')
+                   f'--safeguard_opt {safeguard_opt}',
+                   f'--safeguard_const {safeguard_const}',
+                   pbsDir='dE')
+    for lam in [0.1, 0.01]:
+        for loss in ['logit', 'ls']:
+            create(f'schimdt_{loss}_{lam}',
+                   outdir,
+                   scriptdir,
+                   '1', '8',
+                   'runall.py',
+                   '--date 04_10_2021',
+                   f'--solver schimdt',
+                   f'--loss {loss}',
+                   f'--lam_shrink {lam}',
+                   pbsDir='dE')
+    for loss in ['logit', 'ls']:
+        for lam in [0.1, 0.01]:
+            create(f'naive_{loss}_{lam}_exactsolve',
+                   outdir,
+                   scriptdir,
+                   '1', '8',
+                   'runall.py',
+                   '--date 04_10_2021',
+                   f'--solver naive',
+                   f'--loss {loss}',
+                   f'--lam_shrink {lam}',
+                   f'--init_perturb 0',
+                   f'--safeguard_opt {safeguard_opt}',
+                   f'--safeguard_const {safeguard_const}',
+                   pbsDir='dE')
