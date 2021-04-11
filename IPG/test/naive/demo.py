@@ -2,7 +2,7 @@
 File: debug.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-06-09 16:35
-Last Modified: 2021-04-06 01:39
+Last Modified: 2021-04-10 12:05
 --------------------------------------------
 Description:
 '''
@@ -24,7 +24,8 @@ from src.naive.Solver import Solver
 
 test = 'logit'
 if test == 'logit':
-    datasetName = 'diabetes'
+    # datasetName = 'diabetes'
+    datasetName = 'heart'
     loss = 'logit'
 else:
     # datasetName = 'cpusmall_scale'
@@ -32,8 +33,8 @@ else:
     loss = 'ls'
 
 
-lam_shrink = 0.1
-frac = 0.2
+lam_shrink = 0.01
+frac = 0.25
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
 X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../db')
@@ -71,6 +72,13 @@ else:
     savemat(Lip_path, {"L": L})
     print(f"save Lipschitz constant to: {Lip_path}")
 
-info = solver.solve(alpha=1 / L)
-# info = solver.solve(alpha=1 / L, safeguard_opt='schimdt', safeguard_const=1)
-# info = solver.solve(alpha=1 / L, safeguard_opt='const', safeguard_const=1)
+# info = solver.solve(alpha=1 / L)
+
+
+params['init_perturb'] = 10
+params['update_alpha_strategy'] = 'model'
+params['safeguard_opt'] = 'const'
+params['safeguard_const'] = 10
+params['max_iter'] = 1e5
+solver = Solver(prob, params)
+info = solver.solve()
