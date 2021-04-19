@@ -2,7 +2,7 @@
 File: params.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2019-10-31 15:51
-Last Modified: 2021-04-06 01:34
+Last Modified: 2021-04-18 21:11
 --------------------------------------------
 Description:
 '''
@@ -11,6 +11,7 @@ params = {}
 # termination
 params['tol'] = 1e-6
 params['max_iter'] = 100000
+params['maxiter_inner'] = 5e5
 params['max_time'] = 3600
 params['max_back'] = 100
 # prin'
@@ -39,6 +40,7 @@ params['safeguard_opt'] = 'schimdt'
 params['safeguard_const'] = 1
 # parameters for schimdt method
 params['delta'] = 1  # 1e-3
+params['const'] = 1  # c/k^3
 
 
 fileTypeDict = {}

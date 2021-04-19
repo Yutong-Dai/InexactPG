@@ -2,7 +2,7 @@
 File: logitbatch.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-04-06 01:27
-Last Modified: 2021-04-06 02:08
+Last Modified: 2021-04-18 16:54
 --------------------------------------------
 Description:
 '''
@@ -20,14 +20,16 @@ parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth te
 parser.add_argument('--date', default='04_06_2021', type=str, help='lambda shrink parameters')
 parser.add_argument('--loss', default='logit', type=str, help='lambda shrink parameters')
 parser.add_argument('--lam_shrink', default=0.1, type=float, help='lambda shrink parameters')
+parser.add_argument('--t', default=1e-12, type=float, help='lambda shrink parameters')
+parser.add_argument('--tol', default=1e-3, type=float, help='lambda shrink parameters')
 parser.add_argument('--safeguard_opt', default='schimdt', type=str, help='lambda shrink parameters')
 parser.add_argument('--safeguard_const', default=1.0, type=float, help='lambda shrink parameters')
 args = parser.parse_args()
 
 params['init_perturb'] = 1e2
-params['tol'] = 1e-6
+params['tol'] = args.tol
 params['update_alpha_strategy'] = 'none'
-params['t'] = 1e-12
+params['t'] = args.t
 params['safeguard_opt'] = args.safeguard_opt
 params['safeguard_const'] = args.safeguard_const
 percents = [0.1, 0.3, 0.5]

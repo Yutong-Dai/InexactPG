@@ -2,7 +2,7 @@
 File: Solver.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:44
-Last Modified: 2021-04-06 01:16
+Last Modified: 2021-04-18 21:12
 --------------------------------------------
 Description:
 '''
@@ -46,19 +46,25 @@ class Solver:
         self.alpha_update = 0
         self.attempts = 0
         while True:
-            # schimdt
-            self.xaprox = self.prob.ipg(x, gradfx, alpha, epsilon, self.init_perturb,
-                                        mode=self.mode, seed=0, max_attempts=self.max_attempts)
+            if self.inexact_strategy == 'sampling':
+                self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy, epsilon=epsilon,
+                                            init_perturb=self.init_perturb,
+                                            mode=self.mode, seed=0, max_attempts=self.max_attempts)
+            else:
+                self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy, epsilon=epsilon,
+                                            x_init=x, maxiter_inner=self.maxiter_inner)
             self.attempts += self.prob.attempt
             if self.xaprox is None:
                 # ipg solver failed
                 self.status = -2
+                self.subsolver_failed = True
                 return None, None, None
             fval_xtrial = self.prob.funcf(self.xaprox)
             d = self.xaprox - x
             d_norm_sq = np.dot(d.T, d)[0][0]
             difference = fval_xtrial - fx - (np.dot(gradfx.T, d)[0][0]) - d_norm_sq / (2 * alpha)
             if difference <= 0:
+                self.subsolver_failed = False
                 break
             else:
                 alpha *= 0.5
@@ -105,6 +111,7 @@ class Solver:
         if explore:
             Fseq = []
             Eseq = []
+            Gseq = []
         iteration_start = time.time()
         fvalx = self.prob.funcf(x)
         rvalx = self.prob.funcr(x)
@@ -121,21 +128,25 @@ class Solver:
                     printUtils.print_header(outID)
                 printUtils.print_iterates(iteration, Fvalx, outID)
             print_cost = time.time() - print_start
-            epsilon = 1 / (iteration + 1)**(2 + self.delta)
-            if explore:
-                Eseq.append(epsilon)
+            epsilon = self.const / (iteration + 1)**(2 + self.delta)
             alpha_old = alpha
             fval_xtrial, rval_xtrial, alpha = self.proximal_update(x, fvalx, gradfx, alpha, epsilon=epsilon)
             iteration_cost = time.time() - iteration_start - print_cost
             time_so_far += iteration_cost
-            if self.printlevel > 0 and self.status != -2:
-                # change from 2-norm to inf-norm
-                # prox_diff = utils.l2_norm(self.xaprox - self.prob.xprox)
-                # print(f"outter: xaprox-xprox:{utils.linf_norm(self.xaprox - self.prob.xprox)}")
-                prox_diff = utils.linf_norm(self.xaprox - self.prob.xprox)
-                printUtils.print_proximal_update_schimdt(alpha_old, self.alpha_update, self.attempts, self.prob.gap, self.epsilon,
-                                                         prox_diff, self.prox_optim, self.aprox_optim,
-                                                         self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+            if self.printlevel > 0:
+                if not self.subsolver_failed:
+                    if explore:
+                        Eseq.append(epsilon)
+                        Gseq.append(self.prob.gap)
+                    # change from 2-norm to inf-norm
+                    # prox_diff = utils.l2_norm(self.xaprox - self.prob.xprox)
+                    # print(f"outter: xaprox-xprox:{utils.linf_norm(self.xaprox - self.prob.xprox)}")
+                    prox_diff = utils.linf_norm(self.xaprox - self.prob.xprox)
+                    printUtils.print_proximal_update_schimdt(alpha_old, self.alpha_update, self.attempts, self.prob.gap, self.epsilon,
+                                                             prox_diff, self.prox_optim, self.aprox_optim,
+                                                             self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+                else:
+                    printUtils.print_proximal_update_schimdt_failed(alpha_old, self.alpha_update, self.attempts, self.prob.gap, self.epsilon, outID)
             fevals += (self.alpha_update + 1)
             # check termination
             if iteration == 0:

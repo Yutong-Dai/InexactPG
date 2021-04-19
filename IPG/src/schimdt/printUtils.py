@@ -2,7 +2,7 @@
 File: printUtils.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:45
-Last Modified: 2021-04-06 02:20
+Last Modified: 2021-04-18 17:50
 --------------------------------------------
 Description:
 '''
@@ -63,18 +63,6 @@ def print_iterates(iteration, F, outID=None):
         logfile.write(contents)
 
 
-def print_proximal_update(alpha, t, c, subits, gap, epsilon,
-                          prox_diff, prox_optim, aprox_optim,
-                          prox_nnz, aprox_nnz, prox_nz, aprox_nz, outID=None):
-    if outID is not None:
-        filename = '{}.txt'.format(outID)
-    else:
-        filename = 'log.txt'
-    contents = f" {alpha:2.3e} {t:3.2f}  {c:2.2e} {subits:3d} {gap:2.3e} {epsilon:2.3e}  {prox_diff:2.3e}    {prox_optim:2.3e}/{aprox_optim:2.3e}      {prox_nnz:4d}/{aprox_nnz:4d}    {prox_nz:4d}/{aprox_nz:4d}  |"
-    with open(filename, "a") as logfile:
-        logfile.write(contents)
-
-
 def print_proximal_update_schimdt(alpha, alpha_update, subits, gap, epsilon,
                                   prox_diff, prox_optim, aprox_optim,
                                   prox_nnz, aprox_nnz, prox_nz, aprox_nz, outID=None):
@@ -83,6 +71,16 @@ def print_proximal_update_schimdt(alpha, alpha_update, subits, gap, epsilon,
     else:
         filename = 'log.txt'
     contents = f" {alpha:2.3e} {alpha_update:3d}  -------   {subits:3d} {gap:2.3e} {epsilon:2.3e}  {prox_diff:2.3e}    {prox_optim:2.3e}/{aprox_optim:2.3e}      {prox_nnz:4d}/{aprox_nnz:4d}    {prox_nz:4d}/{aprox_nz:4d}  |\n"
+    with open(filename, "a") as logfile:
+        logfile.write(contents)
+
+
+def print_proximal_update_schimdt_failed(alpha, alpha_update, subits, gap, epsilon, outID=None):
+    if outID is not None:
+        filename = '{}.txt'.format(outID)
+    else:
+        filename = 'log.txt'
+    contents = f" {alpha:2.3e} {alpha_update:3d}  -------   {subits:3d} {gap:2.3e} {epsilon:2.3e}  \n"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 

@@ -2,7 +2,7 @@
 File: regularizer.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-05-11 21:18
-Last Modified: 2021-03-22 14:41
+Last Modified: 2021-04-18 10:36
 --------------------------------------------
 Description:
 '''
@@ -28,6 +28,19 @@ def _f(X, K, starts, ends, Lambda_group):
         XG_i = X[start:end]
         fval += Lambda_group[i] * np.sqrt(np.dot(XG_i.T, XG_i))[0][0]
     return fval
+
+
+@jit(nopython=True)
+def _g(X, K, starts, ends, Lambda_group):
+    fval = 0.0
+    grad = np.inf * np.zeros_like(X)
+    for i in range(K):
+        start, end = starts[i], ends[i]
+        XG_i = X[start:end]
+        norm_XG_i = np.sqrt(np.dot(XG_i.T, XG_i))[0][0]
+        if norm_XG_i != 0:
+            grad[start:end] = Lambda_group[i] * XG_i / norm_XG_i
+    return grad
 
 
 @jit(nopython=True)
@@ -94,6 +107,9 @@ class GL1:
     def evaluate_function_value_jit(self, X):
         return _f(X, self.K, self.starts, self.ends, self.Lambda_group)
     # gradient is calculated on the fly, no need to define a method here.
+
+    def evaluate_gradient_jit(self, X):
+        return _g(X, self.K, self.starts, self.ends, self.Lambda_group)
 
     def dual(self, y):
         return _dual_jit(y, self.K, self.starts, self.ends, self.Lambda_group)

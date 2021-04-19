@@ -2,7 +2,7 @@
 File: debug.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-06-09 16:35
-Last Modified: 2021-04-10 12:05
+Last Modified: 2021-04-18 16:57
 --------------------------------------------
 Description:
 '''
@@ -23,18 +23,20 @@ from src.naive.Solver import Solver
 
 
 test = 'logit'
+# test = 'ls'
 if test == 'logit':
-    # datasetName = 'diabetes'
-    datasetName = 'heart'
+    datasetName = 'diabetes'
+    # datasetName = 'a9a'
+    # datasetName = 'w8a'
     loss = 'logit'
 else:
     # datasetName = 'cpusmall_scale'
-    datasetName = 'cadata'
+    datasetName = 'bodyfat_scale'
     loss = 'ls'
 
 
-lam_shrink = 0.01
-frac = 0.25
+lam_shrink = 0.1
+frac = 0.3
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
 X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../db')
@@ -58,10 +60,12 @@ Lambda = lammax * lam_shrink
 r = GL1(Lambda=Lambda, group=group)
 prob = ProbGL1(f, r)
 params['init_perturb'] = 1e3
-params['tol'] = 1e-6
+params['tol'] = 1e-3
 # params['beta'] = 1 / 0.9
 params['update_alpha_strategy'] = 'none'
 params['t'] = 1e-12
+params['inexact_strategy'] = 'subgradient'
+# params['inexact_strategy'] = 'sampling'
 solver = Solver(prob, params)
 
 if os.path.exists(Lip_path):
@@ -75,8 +79,8 @@ else:
 # info = solver.solve(alpha=1 / L)
 
 
-params['init_perturb'] = 10
-params['update_alpha_strategy'] = 'model'
+# params['init_perturb'] = 10
+# params['update_alpha_strategy'] = 'model'
 params['safeguard_opt'] = 'const'
 params['safeguard_const'] = 10
 params['max_iter'] = 1e5

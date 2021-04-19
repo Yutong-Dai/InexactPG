@@ -2,7 +2,7 @@
 File: printUtils.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:45
-Last Modified: 2021-04-05 23:36
+Last Modified: 2021-04-18 00:04
 --------------------------------------------
 Description:
 '''
@@ -71,6 +71,16 @@ def print_proximal_update(alpha, t, c, subits, gap, epsilon, eflag,
     else:
         filename = 'log.txt'
     contents = f" {alpha:2.3e}  {c:2.2e} {subits:3d} {gap:2.3e} {epsilon:2.3e}  {eflag}   {prox_diff:2.3e}    {prox_optim:2.3e}/{aprox_optim:2.3e}      {prox_nnz:4d}/{aprox_nnz:4d}    {prox_nz:4d}/{aprox_nz:4d}  |"
+    with open(filename, "a") as logfile:
+        logfile.write(contents)
+
+
+def print_proximal_update_failed(alpha, t, c, subits, gap, epsilon, outID=None):
+    if outID is not None:
+        filename = '{}.txt'.format(outID)
+    else:
+        filename = 'log.txt'
+    contents = f" {alpha:2.3e}  {c:2.2e} {subits:3d} {gap:2.3e} {epsilon:2.3e}  \n"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 

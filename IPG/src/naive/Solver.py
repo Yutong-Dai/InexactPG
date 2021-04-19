@@ -2,7 +2,7 @@
 File: Solver.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:44
-Last Modified: 2021-04-06 01:41
+Last Modified: 2021-04-18 16:56
 --------------------------------------------
 Description:
 '''
@@ -43,9 +43,14 @@ class Solver:
     def proximal_update(self, x, gradfx, alpha, epsilon_safeguard=1e9):
         self.bak = 0
         self.ipg_nnz, self.ipg_nz = None, None
-        self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
-                                    init_perturb=self.init_perturb, epsilon_safeguard=epsilon_safeguard,
-                                    t=self.t, mode=self.mode, seed=0, max_attempts=self.max_attempts)
+        if self.inexact_strategy == 'sampling':
+            self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
+                                        init_perturb=self.init_perturb, epsilon_safeguard=epsilon_safeguard,
+                                        t=self.t, mode=self.mode, seed=0, max_attempts=self.max_attempts)
+        else:
+            self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
+                                        x_init=x, epsilon_safeguard=epsilon_safeguard,
+                                        t=self.t, maxiter_inner=self.maxiter_inner)
         if self.xaprox is not None:
             # collect stats
             # switch from 2-norm to inf-norm
@@ -67,6 +72,7 @@ class Solver:
         else:
             self.subsolver_failed = True
             # ipg solver failed
+            self.epsilon = self.prob.epsilon
             self.status = -2
 
     def linesearch(self, x, alpha, fvalx, rvalx):
@@ -119,6 +125,7 @@ class Solver:
         if explore:
             Fseq = []
             Eseq = []
+            Gseq = []
         iteration_start = time.time()
         fvalx = self.prob.funcf(x)
         rvalx = self.prob.funcr(x)
@@ -148,16 +155,21 @@ class Solver:
             self.proximal_update(x, gradfx, alpha, epsilon_safeguard)
             iteration_cost = time.time() - iteration_start - print_cost
             time_so_far += iteration_cost
-            if self.printlevel > 0 and (not self.subsolver_failed):
-                # change from 2-norm to inf-norm
-                # prox_diff = utils.l2_norm(self.xaprox - self.prob.xprox)
-                # print(f"outter: xaprox-xprox:{utils.linf_norm(self.xaprox - self.prob.xprox)}")
-                prox_diff = utils.linf_norm(self.xaprox - self.prob.xprox)
-                if explore:
-                    Eseq.append(self.epsilon)
-                printUtils.print_proximal_update(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
-                                                 self.epsilon, self.prob.eflag, prox_diff, self.prox_optim, self.aprox_optim,
-                                                 self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+            if self.printlevel > 0:
+                if not self.subsolver_failed:
+                    # change from 2-norm to inf-norm
+                    # prox_diff = utils.l2_norm(self.xaprox - self.prob.xprox)
+                    # print(f"outter: xaprox-xprox:{utils.linf_norm(self.xaprox - self.prob.xprox)}")
+                    prox_diff = utils.linf_norm(self.xaprox - self.prob.xprox)
+                    if explore:
+                        Eseq.append(self.epsilon)
+                        Gseq.append(self.prob.gap)
+                    printUtils.print_proximal_update(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
+                                                     self.epsilon, self.prob.eflag, prox_diff, self.prox_optim, self.aprox_optim,
+                                                     self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+                else:
+                    printUtils.print_proximal_update_failed(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
+                                                            self.epsilon, outID)
             if iteration == 0:
                 tol = max(1, self.prox_optim) * self.tol
             if self.prox_optim <= tol:
@@ -220,6 +232,7 @@ class Solver:
         if explore:
             info['Fseq'] = Fseq
             info['Eseq'] = Eseq
+            info['Gseq'] = Gseq
         if self.printlevel > 0:
             printUtils.print_exit(self.status, outID)
             printUtils.print_result(info, outID)

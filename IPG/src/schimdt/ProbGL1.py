@@ -2,7 +2,7 @@
 File: ProbGL1.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 02:01
-Last Modified: 2021-04-06 00:38
+Last Modified: 2021-04-18 18:16
 --------------------------------------------
 Description:
 '''
@@ -37,10 +37,61 @@ class ProbGL1(Problem):
     def gradf(self, x):
         return self.f.gradient()
 
-    def ipg(self, xk, gradfxk, alphak, epsilon, init_perturb, mode, seed, max_attempts):
-        self.seed = seed
+    def ipg(self, xk, gradfxk, alphak, method, **kwargs):
         xprox, self.nz, self.nnz = self._pg(xk, gradfxk, alphak)
         self.xprox = xprox
+        epsilon = kwargs['epsilon']
+        if method == 'sampling':
+            init_perturb = kwargs['init_perturb']
+            mode = kwargs['mode']
+            seed = kwargs['seed']
+            max_attempts = kwargs['max_attempts']
+            x = self._ipg_sample(xprox, xk, gradfxk, alphak, epsilon, init_perturb, mode, seed, max_attempts)
+        elif method == 'subgradient':
+            x_init = kwargs['x_init']
+            x = self._ipg_subgradient(xk, gradfxk, alphak, x_init, epsilon, maxiter=kwargs['maxiter_inner'])
+        else:
+            raise ValueError(f'{method} is not defined.')
+        return x
+
+    def _ipg_subgradient(self, xk, gradfxk, alphak, x_init, epsilon, maxiter):
+        if x_init is None:
+            x = np.zeros_like(xk)
+        else:
+            x = x_init
+        iters = 0
+        while True:
+            # generate dual variable
+            gradient_step = xk - alphak * gradfxk
+            temp = (x - gradient_step) / alphak
+            dual_norm = self.r.dual(temp)
+            y = min(1, 1 / dual_norm) * temp
+            # check duality gap
+            gap = self._duality_gap(x, y, xk, gradfxk, alphak)
+            # check termination
+            self.gap = gap
+
+            self.attempt = iters
+            if gap <= epsilon and iters > 0:
+                # distance to the exact proximal point
+                self.perturb = utils.l2_norm(x - self.xprox)
+                return x
+            if iters > maxiter:
+                warnings.warn("_ipg_subgradient: cannot find a (x,y) pair satisfying the gap condition!")
+                return None
+            subgrad = _get_subgradient_prox_prob(x, xk, alphak, gradfxk,
+                                                 self.K, self.starts,
+                                                 self.ends, self.Lambda_group)
+            norm_subgrad = utils.l2_norm(subgrad)
+            if norm_subgrad <= 1e-16:
+                warnings.warn("_ipg_subgradient: norm of subgradient is zero! But do not satisfy the relative termination condition!")
+                return None
+            iters += 1
+            stepsize = 1 / (iters + 1)
+            x = x - stepsize * subgrad
+
+    def _ipg_sample(self, xprox, xk, gradfxk, alphak, epsilon, init_perturb, mode, seed, max_attempts):
+        self.seed = seed
         perturb = init_perturb
         attempt = 1
         while True:
@@ -113,3 +164,25 @@ def _proximal_gradient_jit(X, alpha, gradf, K, p, starts, ends, Lambda_group):
             zeroGroup.append(i)
         proximal[start:end] = max(temp, 0) * gradient_step
     return proximal, len(zeroGroup), len(nonZeroGroup)
+
+
+@jit(nopython=True, cache=True)
+def _get_subgradient_prox_prob(x, xk, alphak, gradfxk, K, starts, ends, Lambda_group):
+    # calculate the subgradient at the x
+    diff = x - (xk - alphak * gradfxk)
+    subgradient = np.zeros_like(diff)
+    for i in range(K):
+        start, end = starts[i], ends[i]
+        xGi = x[start:end]
+        norm_xG1 = np.sqrt(np.dot(xGi.T, xGi))[0][0]
+        if norm_xG1 <= 1e-16:
+            grad_smooth_part_scaled = diff[start:end] / (Lambda_group[i] * alphak)
+            norm_grad_smooth_part_scaled = np.sqrt(np.dot(grad_smooth_part_scaled.T, grad_smooth_part_scaled))[0][0]
+            if norm_grad_smooth_part_scaled <= 1:
+                subgrad_regularizer = -grad_smooth_part_scaled
+            else:
+                subgrad_regularizer = -grad_smooth_part_scaled / norm_grad_smooth_part_scaled
+            subgradient[start:end] = diff[start:end] / alphak + Lambda_group[i] * subgrad_regularizer
+        else:
+            subgradient[start:end] = diff[start:end] / alphak + (Lambda_group[i] / norm_xG1) * xGi
+    return subgradient
