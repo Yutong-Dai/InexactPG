@@ -30,7 +30,7 @@ params['update_alpha_strategy'] = 'none'  # model / none
 params['optimality_measure'] = 'prox'  # iterates
 params['inexact_strategy'] = 'sampling'
 # sample inexact proximal point
-params['max_attempts'] = 300
+params['max_attempts'] = 300  # sampling parameters
 params['warm_sampling'] = False
 params['init_perturb'] = 0
 params['t'] = 1
@@ -40,7 +40,7 @@ params['safeguard_opt'] = 'schimdt'
 params['safeguard_const'] = 1
 # parameters for schimdt method
 params['delta'] = 1  # 1e-3
-params['const'] = 1  # c/k^3
+params['schimdt_const'] = 1  # c/k^3
 
 
 fileTypeDict = {}

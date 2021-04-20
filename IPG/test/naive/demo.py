@@ -20,18 +20,18 @@ from src.regularizer import GL1
 from src.lossfunction import LogisticLoss, LeastSquares
 from src.naive.ProbGL1 import ProbGL1
 from src.naive.Solver import Solver
-
+import numpy as np
 
 test = 'logit'
 # test = 'ls'
 if test == 'logit':
-    datasetName = 'diabetes'
+    datasetName = "heart"
     # datasetName = 'a9a'
     # datasetName = 'w8a'
     loss = 'logit'
 else:
     # datasetName = 'cpusmall_scale'
-    datasetName = 'bodyfat_scale'
+    datasetName = 'virusShare'
     loss = 'ls'
 
 
@@ -39,7 +39,7 @@ lam_shrink = 0.1
 frac = 0.3
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
-X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../db')
+X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
 if loss == 'logit':
     f = LogisticLoss(X, y, datasetName)
 else:
@@ -82,7 +82,7 @@ else:
 # params['init_perturb'] = 10
 # params['update_alpha_strategy'] = 'model'
 params['safeguard_opt'] = 'const'
-params['safeguard_const'] = 10
+params['safeguard_const'] = 1
 params['max_iter'] = 1e5
 solver = Solver(prob, params)
-info = solver.solve()
+info = solver.solve(alpha=1 / L)

@@ -17,6 +17,7 @@ import utils as utils
 import numpy as np
 from numba import jit
 import warnings
+np.seterr(over='raise')
 
 
 class ProbGL1(Problem):
@@ -27,6 +28,7 @@ class ProbGL1(Problem):
         self.starts = self.r.starts
         self.ends = self.r.ends
         self.Lambda_group = self.r.Lambda_group
+        self.overflow = False
 
     def funcf(self, x):
         return self.f.evaluate_function_value(x)
@@ -84,6 +86,9 @@ class ProbGL1(Problem):
             y = min(1, 1 / dual_norm) * temp
             # check duality gap
             gap = self._duality_gap(x, y, xk, gradfxk, alphak)
+            if self.overflow:
+                warnings.warn("_ipg_subgradient: too large subgradient leads to overflow!")
+                return None
             # check termination
             diff = x - xk
             myepsilon = self.ck * (np.dot(diff.T, diff)[0][0])
@@ -193,7 +198,12 @@ class ProbGL1(Problem):
     def _duality_gap(self, x, y, xk, gradfxk, alphak):
         gradient_step = xk - alphak * gradfxk
         temp = x - gradient_step
-        primal = np.dot(temp.T, temp)[0][0] / (2 * alphak) + self.r.evaluate_function_value_jit(x)
+        try:
+            primal = np.dot(temp.T, temp)[0][0] / (2 * alphak) + self.r.evaluate_function_value_jit(x)
+        except Exception as e:
+            print(e)
+            primal = 0
+            self.overflow = True
         dual_negative = ((alphak / 2) * (np.dot(y.T, y)) + np.dot(gradient_step.T, y))[0][0]
         return primal + dual_negative
 

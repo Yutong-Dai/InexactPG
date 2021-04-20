@@ -45,6 +45,8 @@ class Solver:
         self.ipg_nnz, self.ipg_nz = None, None
         self.alpha_update = 0
         self.attempts = 0
+        # incase the subgradient solver failed at the very beginning
+        self.prox_optim = 1e9
         while True:
             if self.inexact_strategy == 'sampling':
                 self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy, epsilon=epsilon,
@@ -56,9 +58,7 @@ class Solver:
             self.attempts += self.prob.attempt
             if self.xaprox is None:
                 # ipg solver failed
-                self.status = -2
-                self.subsolver_failed = True
-                return None, None, None
+                break
             fval_xtrial = self.prob.funcf(self.xaprox)
             d = self.xaprox - x
             d_norm_sq = np.dot(d.T, d)[0][0]
@@ -69,21 +69,25 @@ class Solver:
             else:
                 alpha *= 0.5
                 self.alpha_update += 1
-        rval_xtrial = self.prob.funcr(self.xaprox)
-        # collect stats
-        # switch from 2-norm to inf-norm
-        # self.prox_optim = utils.l2_norm(self.prob.xprox - x)
-        self.prox_optim = utils.linf_norm(self.prob.xprox - x)
-        # self.aprox_optim = utils.l2_norm(self.xaprox - x)
-        self.aprox_optim = utils.linf_norm(self.xaprox - x)
-        # optional: get sparsity sturctures.
-        if self.prob.nz is not None:
-            self.pg_nz, self.pg_nnz = self.prob.nz, self.prob.nnz
-        if self.pg_nz is not None:
-            self.ipg_nnz = utils.get_group_structure(self.xaprox, self.prob.K, self.prob.starts, self.prob.ends)
-            self.ipg_nz = self.prob.K - self.ipg_nnz
-        self.epsilon = epsilon
-        return fval_xtrial, rval_xtrial, alpha
+        if self.xaprox is not None:
+            rval_xtrial = self.prob.funcr(self.xaprox)
+            # collect stats
+            # switch from 2-norm to inf-norm
+            # self.prox_optim = utils.l2_norm(self.prob.xprox - x)
+            self.prox_optim = utils.linf_norm(self.prob.xprox - x)
+            # self.aprox_optim = utils.l2_norm(self.xaprox - x)
+            self.aprox_optim = utils.linf_norm(self.xaprox - x)
+            # optional: get sparsity sturctures.
+            if self.prob.nz is not None:
+                self.pg_nz, self.pg_nnz = self.prob.nz, self.prob.nnz
+            if self.pg_nz is not None:
+                self.ipg_nnz = utils.get_group_structure(self.xaprox, self.prob.K, self.prob.starts, self.prob.ends)
+                self.ipg_nz = self.prob.K - self.ipg_nnz
+            return fval_xtrial, rval_xtrial, alpha
+        else:
+            self.status = -2
+            self.subsolver_failed = True
+            return None, None, None
 
     def solve(self, x=None, alpha=None, explore=False):
         if not x:
@@ -108,6 +112,7 @@ class Solver:
         baks = 0
         self.status = None
         time_so_far = 0
+        subgrad_iters = 0
         if explore:
             Fseq = []
             Eseq = []
@@ -128,7 +133,7 @@ class Solver:
                     printUtils.print_header(outID)
                 printUtils.print_iterates(iteration, Fvalx, outID)
             print_cost = time.time() - print_start
-            epsilon = self.const / (iteration + 1)**(2 + self.delta)
+            epsilon = self.schimdt_const / (iteration + 1)**(2 + self.delta)
             alpha_old = alpha
             fval_xtrial, rval_xtrial, alpha = self.proximal_update(x, fvalx, gradfx, alpha, epsilon=epsilon)
             iteration_cost = time.time() - iteration_start - print_cost
@@ -142,11 +147,12 @@ class Solver:
                     # prox_diff = utils.l2_norm(self.xaprox - self.prob.xprox)
                     # print(f"outter: xaprox-xprox:{utils.linf_norm(self.xaprox - self.prob.xprox)}")
                     prox_diff = utils.linf_norm(self.xaprox - self.prob.xprox)
-                    printUtils.print_proximal_update_schimdt(alpha_old, self.alpha_update, self.attempts, self.prob.gap, self.epsilon,
+                    printUtils.print_proximal_update_schimdt(alpha_old, self.alpha_update, self.attempts, self.prob.gap, epsilon,
                                                              prox_diff, self.prox_optim, self.aprox_optim,
                                                              self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+                    subgrad_iters += self.prob.attempt
                 else:
-                    printUtils.print_proximal_update_schimdt_failed(alpha_old, self.alpha_update, self.attempts, self.prob.gap, self.epsilon, outID)
+                    printUtils.print_proximal_update_schimdt_failed(alpha_old, self.alpha_update, self.attempts, self.prob.gap, epsilon, outID)
             fevals += (self.alpha_update + 1)
             # check termination
             if iteration == 0:
@@ -201,11 +207,12 @@ class Solver:
             'nz': self.ipg_nz, 'nnz': self.ipg_nnz, 'status': self.status,
             'fevals': fevals, 'gevals': gevals, 'baks': baks, 'optim': self.prox_optim,
             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
-            'K': self.prob.K
+            'K': self.prob.K, 'subgrad_iters': subgrad_iters
         }
         if explore:
             info['Fseq'] = Fseq
             info['Eseq'] = Eseq
+            info['Gseq'] = Gseq
         if self.printlevel > 0:
             printUtils.print_exit(self.status, outID)
             printUtils.print_result(info, outID)

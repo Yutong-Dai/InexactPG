@@ -43,6 +43,8 @@ class Solver:
     def proximal_update(self, x, gradfx, alpha, epsilon_safeguard=1e9):
         self.bak = 0
         self.ipg_nnz, self.ipg_nz = None, None
+        # incase the subgradient solver failed at the very beginning
+        self.prox_optim = 1e9
         if self.inexact_strategy == 'sampling':
             self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
                                         init_perturb=self.init_perturb, epsilon_safeguard=epsilon_safeguard,
@@ -100,7 +102,7 @@ class Solver:
             rval_xtrial = self.prob.funcr(xtrial)
 
     def solve(self, x=None, alpha=None, explore=False):
-        if not x:
+        if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
             alpha = self.set_init_alpha(x)
@@ -122,6 +124,7 @@ class Solver:
         baks = 0
         self.status = None
         time_so_far = 0
+        subgrad_iters = 0
         if explore:
             Fseq = []
             Eseq = []
@@ -167,6 +170,7 @@ class Solver:
                     printUtils.print_proximal_update(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
                                                      self.epsilon, self.prob.eflag, prox_diff, self.prox_optim, self.aprox_optim,
                                                      self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+                    subgrad_iters += self.prob.attempt
                 else:
                     printUtils.print_proximal_update_failed(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
                                                             self.epsilon, outID)
@@ -227,7 +231,7 @@ class Solver:
             'nz': self.ipg_nz, 'nnz': self.ipg_nnz, 'status': self.status,
             'fevals': fevals, 'gevals': gevals, 'baks': baks, 'optim': self.prox_optim,
             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
-            'K': self.prob.K
+            'K': self.prob.K, 'subgrad_iters': subgrad_iters
         }
         if explore:
             info['Fseq'] = Fseq
