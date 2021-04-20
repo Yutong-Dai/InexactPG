@@ -252,3 +252,74 @@ def get_best(pools):
                 else:
                     max_key = val[3]
         return max_key
+    
+
+        
+def get_one_instance(date, loss, dataset, lambda_shrinage, percent, params_naive_const, 
+                     params_naive_laststep, params_naive_schimdt, params_schimdt):
+    label_lst = []
+    Fseq_lst = []
+    Eseq_lst = []
+    Gseq_lst = []
+    subgrad_lst = []
+    time_lst = []
+    naive_dir_base = f'../IPG/test/log/{date}/naive/{loss}/{lambda_shrinage}_{percent}'
+    naive_const_dir = f'{naive_dir_base}_{params_naive_const[0]}_const_{params_naive_const[1]}/{dataset}_info.npy'
+    naive_laststep_dir = f'{naive_dir_base}_{params_naive_laststep[0]}_laststep_{params_naive_laststep[1]}/{dataset}_info.npy'
+    naive_schimdt_dir = f'{naive_dir_base}_{params_naive_schimdt[0]}_schimdt_{params_naive_schimdt[1]}/{dataset}_info.npy'    
+    schimdt_dir = f"../IPG/test/log/{date}/schimdt/{loss}/{lambda_shrinage}_{percent}_'none'_{params_schimdt[1]}/{dataset}_info.npy"
+    dir_lst = [naive_const_dir, naive_laststep_dir, naive_schimdt_dir, schimdt_dir]
+    label_lst = [f'const-{params_naive_const[0]}-{params_naive_const[1]}',
+                 f'laststep-{params_naive_laststep[0]}-{params_naive_laststep[1]}',
+                 f'schimdt-{params_naive_schimdt[0]}-{params_naive_schimdt[1]}',
+                 f'Schimdt-{params_schimdt[1]}',
+                ]
+    label_lst = [f'{i:20}' for i in label_lst]
+    for i in dir_lst:
+        info = np.load(i, allow_pickle=True).item()
+        Fseq_lst.append(info['Fseq'])
+        Eseq_lst.append(info['Eseq'])
+        Gseq_lst.append(info['Gseq'])
+        subgrad_lst.append(info['subgrad_iters'])
+        time_lst.append(info['time'])
+    return Fseq_lst, Eseq_lst, Gseq_lst, subgrad_lst, time_lst, label_lst
+
+def create_plot(dataset, lambda_shrinage, percent, Fseq_lst, Eseq_lst, 
+                Gseq_lst, subgrad_lst, time_lst, label_lst, 
+                fxmax, exmax, alpha, markerset='fill', savedir=None, ext=None):
+    fig, (row1, row2, row3) = plt.subplots(1, 3, figsize=(18,4))
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
+    if markerset == 'fill':
+        markers=['o', 's', 'P', '*', 'D', 'X', 'p']
+    else:
+        markers=['.', '1', 'x', '4', '+', '|', '_']        
+    for i in range(len(label_lst)):
+        row1.plot(Fseq_lst[i], markers[i], color=colors[i], label=f'{label_lst[i]}: iters:{len(Fseq_lst[i])}', alpha=alpha)
+    for i in range(len(label_lst)):
+        row2.plot(Eseq_lst[i], markers[i], color=colors[i], label=f'{label_lst[i]}: subgrad:{subgrad_lst[i]:2.2e}', alpha=alpha)
+    for i in range(len(label_lst)):
+        row3.plot(Gseq_lst[i], markers[i], color=colors[i], label=f'{label_lst[i]}: time:{time_lst[i]:2.2e}', alpha=alpha) 
+    row1.set_title("Fseq")
+    row2.set_title("Eseq")
+    row3.set_title("Gseq")    
+    row1.legend()
+    row2.legend()
+    row3.legend()
+    if fxmax != -1:
+        row1.set_xlim((-1, fxmax))
+    row1.set_yscale('log')
+    if exmax != -1:
+        row2.set_xlim((-1, exmax))
+        row3.set_xlim((-1, exmax))
+    row2.set_yscale('log')
+    row3.set_yscale('log')
+    dname = " ".join(dataset.split('_'))
+    fig.suptitle(f'{dname}-{lambda_shrinage}-{percent}', fontsize="x-large",  y=1.02)
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.0)
+    if savedir is not None:
+        if ext is not None:
+            plt.savefig(f'{savedir}/{dataset}_{lambda_shrinage}_{percent}_{ext}.png', bbox_inches = "tight")
+        else:
+            plt.savefig(f'{savedir}/{dataset}_{lambda_shrinage}_{percent}.png', bbox_inches = "tight")
+        plt.close(fig)
