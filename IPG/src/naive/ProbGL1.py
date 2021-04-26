@@ -54,14 +54,15 @@ class ProbGL1(Problem):
             x = self._ipg_sample(xprox, xk, gradfxk, alphak, init_perturb, epsilon_safeguard, max_attempts, t, mode, seed)
         elif method == 'subgradient':
             x_init = kwargs['x_init']
-            x = self._ipg_subgradient(xk, gradfxk, alphak, x_init, t, epsilon_safeguard, maxiter=kwargs['maxiter_inner'])
+            x = self._ipg_subgradient(xk, gradfxk, alphak, x_init, t, epsilon_safeguard,
+                                      maxiter=kwargs['maxiter_inner'], scalesubgrad=kwargs['scalesubgrad'])
         else:
             raise ValueError(f'{method} is not defined.')
         # print(f"probGL1: x:{x.T}")
         # print(f"xaprox-xprox:{utils.linf_norm(x-xprox)}")
         return x
 
-    def _ipg_subgradient(self, xk, gradfxk, alphak, x_init, t, epsilon_safeguard, maxiter):
+    def _ipg_subgradient(self, xk, gradfxk, alphak, x_init, t, epsilon_safeguard, maxiter, scalesubgrad):
         if x_init is None:
             x = np.zeros_like(xk)
         else:
@@ -133,7 +134,10 @@ class ProbGL1(Problem):
             # stepsize = 1 / iters
             # stepsize = 2 * alphak / (iters + 1)
             stepsize = 1 / (iters + 1)
-            x = x - stepsize * subgrad
+            if scalesubgrad:
+                x = x - (stepsize / norm_subgrad) * subgrad
+            else:
+                x = x - stepsize * subgrad
 
     def _prox_primal(self, x, xk, gradfxk, alphak):
         gradient_step = xk - alphak * gradfxk

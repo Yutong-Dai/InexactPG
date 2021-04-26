@@ -36,8 +36,8 @@ params['init_perturb'] = 0
 params['t'] = 1
 params['mode'] = 'whole'
 # epsilon safeguard params
-params['safeguard_opt'] = 'schimdt'
-params['safeguard_const'] = 1
+params['safeguard_opt'] = 'schimdt'  # 'none' / laststep
+params['safeguard_const'] = 1  # np.inf
 # parameters for schimdt method
 params['delta'] = 1  # 1e-3
 params['schimdt_const'] = 1  # c/k^3

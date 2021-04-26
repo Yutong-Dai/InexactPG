@@ -9,7 +9,7 @@ from matplotlib import rc
 rc('text', usetex=True)
 
 
-def create_paths(logdir='../IPG/test/log', date='04_18_2021', solver='naive', loss='logit', lam_shrink=[0.1, 0.01], percent=[0.1, 0.2], *argv):
+def create_paths(logdir='../IPG/test/log', date='04_18_2021', solver='naive', loss='logit', lam_shrink=[0.1, 0.01], percent=[0.1, 0.2], excludes=None, *argv):
     list_all_npy_path =[]
     for lam in lam_shrink:
         for per in percent:
@@ -18,7 +18,14 @@ def create_paths(logdir='../IPG/test/log', date='04_18_2021', solver='naive', lo
                 minimal_dir += f'_{arg}'
             datasets = glob.glob(f'{minimal_dir}/*.npy')
             datasets.sort()
-            list_all_npy_path += datasets
+            datasets_rmed = datasets.copy()
+            if excludes is not None:
+                for e in excludes:
+                    for p in datasets:
+                        datasetname = p.split("/")[-1].split("_")[0]
+                        if datasetname == e:
+                            datasets_rmed.remove(p)
+            list_all_npy_path += datasets_rmed
     return list_all_npy_path
 
 def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', 'iteration', 'F', 'optim','subgrad_iters']):
@@ -35,15 +42,15 @@ def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', '
         print(f" {count:{formatter}}/{df.shape[0]} instances terminate with status: {code:2d}")
     return df
 
-def get_all_naive(logdir, date, loss, lam_shrink, percent, safeguard):
+def get_all_naive(logdir, date, loss, lam_shrink, percent, safeguard, safeguard_consts=[1e-1, 1e0, 1e1], ts=[1e-12, 1e-3, 1e0], excludes=None):
     algo_df_dict = {}
     solver = 'naive'
     if safeguard == 'const':
         safeguard_const = 1e3
-        for t in [1e-12, 1e-3, 1e0]:
+        for t in ts:
             algorithm = f'{solver}-{t}-{safeguard}-{safeguard_const}'
             print(f'{algorithm}')
-            paths = create_paths(logdir, date, solver, loss, lam_shrink, percent, t, 'const', 1e3)
+            paths = create_paths(logdir, date, solver, loss, lam_shrink, percent, excludes, t, 'const', 1e3)
             if paths == []:
                 print(' empty')
                 df = None
@@ -51,11 +58,11 @@ def get_all_naive(logdir, date, loss, lam_shrink, percent, safeguard):
                 df = load_df_from_paths(paths)
             algo_df_dict[algorithm] = df
     else:
-        for safeguard_const in [1e-1, 1e0, 1e1]:
-            for t in [1e-12, 1e-3, 1e0]:
+        for safeguard_const in safeguard_consts:
+            for t in ts:
                 algorithm = f'{solver}-{t}-{safeguard}-{safeguard_const}'
                 print(f'{algorithm}')
-                paths = create_paths(logdir, date, solver, loss, lam_shrink, percent, t, safeguard, safeguard_const)
+                paths = create_paths(logdir, date, solver, loss, lam_shrink, percent, excludes, t, safeguard, safeguard_const)
                 if paths == []:
                     print(' empty')
                     df = None
@@ -64,13 +71,28 @@ def get_all_naive(logdir, date, loss, lam_shrink, percent, safeguard):
                 algo_df_dict[algorithm] = df
     return algo_df_dict
 
-def get_all_schimdt(logdir, date, loss, lam_shrink, percent):
+def get_all_schimdt(logdir, date, loss, lam_shrink, percent, schimdt_consts=[1e-1, 1e0, 1e1], excludes=None):
     solver = 'schimdt'
     algo_df_dict = {}
-    for schimdt_const in [1e-1, 1e0, 1e1]:
+    for schimdt_const in schimdt_consts:
         algorithm = f"{solver}-{'none'}-{schimdt_const}"
         print(f'{algorithm}')
-        paths = create_paths(logdir, date, 'schimdt', loss, lam_shrink, percent, "'none'", schimdt_const)
+        paths = create_paths(logdir, date, 'schimdt', loss, lam_shrink, percent, excludes, "'none'", schimdt_const)
+        if paths == []:
+            print(' empty')
+            df = None
+        else:
+            df = load_df_from_paths(paths)
+        algo_df_dict[algorithm] = df
+    return algo_df_dict
+
+def get_all_adaptive(logdir, date, loss, lam_shrink, percent, ts=[1e-12], excludes=None):
+    algo_df_dict = {}
+    solver = 'naive'
+    for t in ts:
+        algorithm = f'{solver}-{t}-none-inf'
+        print(f'{algorithm}')
+        paths = create_paths(logdir, date, solver, loss, lam_shrink, percent, excludes, t, 'none', 'inf')
         if paths == []:
             print(' empty')
             df = None
@@ -129,8 +151,8 @@ class PerformanceProfile:
                     msg = f"compare {datasetid[i]} with {frame['datasetid'][i]} \n"
                     msg += 'unmatched instance'
                     raise ValueError(msg)
-        print(f"After subsetting, {num_records} instabces are kept.")
-    def plot(self, column, options={}, save=False, saveDir='./', ext=None, dpi=300, show_num=False, use_tt=True, plot=True):
+        print(f"After subsetting, {num_records} instances are kept.")
+    def plot(self, column, options={}, save=False, saveDir='./', ext=None, dpi=300, show_num=False, use_tt=True, plot=True, aoc=True, factor=1.5):
         if 'color' not in options.keys():
             options['color'] = 'rgb'
         if 'ratio_max' not in options.keys():
@@ -149,24 +171,40 @@ class PerformanceProfile:
                 ratio = (data1 / data2).to_numpy()
                 ratio[ratio == 0] = 1e-16
                 ratio = -np.log2(ratio)
+                ratio[ratio == -np.log2(1e-16)] = np.inf
                 ratio = ratio[~np.isnan(ratio)]
                 bars_pos = np.zeros(ratio.shape)
                 bars_neg = np.zeros(ratio.shape)
                 flag = ratio > 0
                 bars_pos[flag] = ratio[flag]
                 bars_neg[~flag] = ratio[~flag]
-                bars_pos[bars_pos == np.inf] = self.options['ratio_max']
-                bars_neg[bars_neg == -np.inf] = -self.options['ratio_max']
+                if aoc:
+                    posmax = np.max(bars_pos[bars_pos != np.inf])
+                    negmin = np.min(bars_neg[bars_neg != -np.inf])
+                    ratio_max = max(posmax, -negmin)
+                    bars_pos[bars_pos == np.inf] = ratio_max * factor
+                    bars_neg[bars_neg == -np.inf] = ratio_max * factor
+                    self.bars_pos = bars_pos
+                    self.bars_neg = bars_neg
+                else:
+                    bars_pos[bars_pos == np.inf] = self.options['ratio_max']
+                    bars_neg[bars_neg == -np.inf] = -self.options['ratio_max']
                 # sort in descending order
                 bars_pos[::-1].sort()
                 bars_neg[::-1].sort()
+                if aoc:
+                    win_aoc =  np.around(np.sum(bars_pos), 3)
+                    lose_aoc = np.around(np.abs(np.sum(bars_neg)), 3)
                 win = sum(flag)
                 lose = sum(ratio < 0)
                 if plot:
                     figure = plt.figure()
                     if show_num:
-                        label_1 = algo1 + ' {:3d}'.format(win)
-                        label_2 = algo2 + ' {:3d}'.format(lose)
+                        label_1 = algo1 + ' {}'.format(win)
+                        label_2 = algo2 + ' {}'.format(lose)
+                        if aoc:
+                            label_1 += f' aoc:{win_aoc}'
+                            label_2 += f' aoc:{lose_aoc}'
                     else:
                         label_1 = self.algo_lst[algo1]
                         label_2 = self.algo_lst[algo2]
@@ -196,7 +234,10 @@ class PerformanceProfile:
                         text = 'subgradient iterations'
                     else:
                         text = column
-                    plt.title("Metric: {}".format(text))
+                    if aoc:
+                        plt.title("Metric: {} (Area Under the Curve)".format(text))
+                    else:
+                        plt.title("Metric: {}".format(text))
                     if save:
                         if ext is None:
                             filename = saveDir + '{}-{}_{}.eps'.format(algo1, algo2, column)
@@ -209,8 +250,15 @@ class PerformanceProfile:
                             figure.savefig(filename)
                 else:
                     key = f'{algo1}_{algo2}'
-                    pools[key] = (win, lose, algo1, algo2)
+                    if aoc:
+                        pools[key] = (win_aoc, lose_aoc, algo1, algo2)
+                    else:
+                        pools[key] = (win, lose, algo1, algo2)
         return pools
+
+
+
+
 
 def get_best(pools):
     copy_pools = deepcopy(pools)

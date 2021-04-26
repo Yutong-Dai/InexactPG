@@ -65,7 +65,11 @@ def _unit_problem(directory, solver, loss, lambda_shrinkage, percent, datasetNam
             L = utils.estimate_lipschitz(X, loss)
             savemat(Lip_path, {"L": L})
             print(f"save Lipschitz constant to: {Lip_path}")
-        info = solver.solve(alpha=1 / L, explore=True)
+        if datasetName in ['australian', 'ijcnn1', 'splice', 'svmguide3', 'w8a', 'virusShare', 'YearPredictionMSD']:
+            scalesubgrad = True
+        else:
+            scalesubgrad = False
+        info = solver.solve(alpha=1 / L, scalesubgrad=scalesubgrad, explore=True)
         datasetid = "{}_{}_{}".format(datasetName, lambda_shrinkage, percent)
         info['datasetid'] = datasetid
         info_name = directory + "/{}_info.npy".format(datasetName)

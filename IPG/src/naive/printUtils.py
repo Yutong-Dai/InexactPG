@@ -137,5 +137,6 @@ def print_result(info, outID=None):
     contents += 'Function evaluations:{:.>55}{:d}\n'.format("", info['fevals'])
     contents += 'Gradient evaluations:{:.>55}{:d}\n'.format("", info['gevals'])
     contents += 'Number of backtracks:{:.>55}{:d}\n'.format("", info['baks'])
+    contents += 'subgrad iters:{:.>55}{:d}\n'.format("", info['subgrad_iters'])
     with open(filename, "a") as logfile:
         logfile.write(contents)

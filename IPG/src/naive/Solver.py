@@ -40,7 +40,7 @@ class Solver:
                 y = x - s * gradfx
         return alpha
 
-    def proximal_update(self, x, gradfx, alpha, epsilon_safeguard=1e9):
+    def proximal_update(self, x, gradfx, alpha, scalesubgrad, epsilon_safeguard=1e9):
         self.bak = 0
         self.ipg_nnz, self.ipg_nz = None, None
         # incase the subgradient solver failed at the very beginning
@@ -52,7 +52,7 @@ class Solver:
         else:
             self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
                                         x_init=x, epsilon_safeguard=epsilon_safeguard,
-                                        t=self.t, maxiter_inner=self.maxiter_inner)
+                                        t=self.t, maxiter_inner=self.maxiter_inner, scalesubgrad=scalesubgrad)
         if self.xaprox is not None:
             # collect stats
             # switch from 2-norm to inf-norm
@@ -101,7 +101,7 @@ class Solver:
             fval_xtrial = self.prob.funcf(xtrial)
             rval_xtrial = self.prob.funcr(xtrial)
 
-    def solve(self, x=None, alpha=None, explore=False):
+    def solve(self, x=None, alpha=None, explore=True, scalesubgrad=False):
         if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
@@ -155,7 +155,9 @@ class Solver:
                 else:
                     # from last iteration
                     epsilon_safeguard = self.safeguard_const * (self.d_norm * self.stepsize) ** 2 * self.prob.ck
-            self.proximal_update(x, gradfx, alpha, epsilon_safeguard)
+            elif self.safeguard_opt == 'none':
+                epsilon_safeguard = np.inf
+            self.proximal_update(x, gradfx, alpha, scalesubgrad, epsilon_safeguard)
             iteration_cost = time.time() - iteration_start - print_cost
             time_so_far += iteration_cost
             if self.printlevel > 0:

@@ -51,12 +51,13 @@ class ProbGL1(Problem):
             x = self._ipg_sample(xprox, xk, gradfxk, alphak, epsilon, init_perturb, mode, seed, max_attempts)
         elif method == 'subgradient':
             x_init = kwargs['x_init']
-            x = self._ipg_subgradient(xk, gradfxk, alphak, x_init, epsilon, maxiter=kwargs['maxiter_inner'])
+            x = self._ipg_subgradient(xk, gradfxk, alphak, x_init, epsilon,
+                                      maxiter=kwargs['maxiter_inner'], scalesubgrad=kwargs['scalesubgrad'])
         else:
             raise ValueError(f'{method} is not defined.')
         return x
 
-    def _ipg_subgradient(self, xk, gradfxk, alphak, x_init, epsilon, maxiter):
+    def _ipg_subgradient(self, xk, gradfxk, alphak, x_init, epsilon, maxiter, scalesubgrad):
         if x_init is None:
             x = np.zeros_like(xk)
         else:
@@ -93,7 +94,10 @@ class ProbGL1(Problem):
                 return None
             iters += 1
             stepsize = 1 / (iters + 1)
-            x = x - stepsize * subgrad
+            if scalesubgrad:
+                x = x - (stepsize / norm_subgrad) * subgrad
+            else:
+                x = x - stepsize * subgrad
 
     def _ipg_sample(self, xprox, xk, gradfxk, alphak, epsilon, init_perturb, mode, seed, max_attempts):
         self.seed = seed
@@ -153,7 +157,7 @@ class ProbGL1(Problem):
         return xprox, zeroGroup, nonZeroGroup
 
 
-@jit(nopython=True, cache=True)
+@ jit(nopython=True, cache=True)
 def _proximal_gradient_jit(X, alpha, gradf, K, p, starts, ends, Lambda_group):
     proximal = np.zeros((p, 1))
     nonZeroGroup = []
@@ -176,7 +180,7 @@ def _proximal_gradient_jit(X, alpha, gradf, K, p, starts, ends, Lambda_group):
     return proximal, len(zeroGroup), len(nonZeroGroup)
 
 
-@jit(nopython=True, cache=True)
+@ jit(nopython=True, cache=True)
 def _get_subgradient_prox_prob(x, xk, alphak, gradfxk, K, starts, ends, Lambda_group):
     # calculate the subgradient at the x
     diff = x - (xk - alphak * gradfxk)

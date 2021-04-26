@@ -26,8 +26,8 @@ test = 'logit'
 # test = 'ls'
 if test == 'logit':
     # datasetName = 'diabetes'
-    # datasetName = 'a9a'
-    datasetName = 'w8a'
+    datasetName = 'a9a'
+    # datasetName = 'australian'
     loss = 'logit'
 else:
     # datasetName = 'cpusmall_scale'
@@ -36,13 +36,11 @@ else:
 
 
 lam_shrink = 0.1
-frac = 0.3
+frac = 0.1
 
-lam_shrink = 0.1
-frac = 0.3
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
-X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../db')
+X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
 if loss == 'logit':
     f = LogisticLoss(X, y, datasetName)
 else:
@@ -50,8 +48,8 @@ else:
 p = X.shape[1]
 num_of_groups = max(int(p * frac), 2)
 group = utils.gen_group(p, num_of_groups)
-lammax_path = f'../../../db/lammax-{datasetName}-{frac}.mat'
-Lip_path = f'../../../db/Lip-{datasetName}.mat'
+lammax_path = f'../../../../GroupFaRSA/db/lammax-{datasetName}-{frac}.mat'
+Lip_path = f'../../../../GroupFaRSA/db/Lip-{datasetName}.mat'
 if os.path.exists(lammax_path):
     lammax = loadmat(lammax_path)["lammax"][0][0]
     print(f"loading lammax from: {lammax_path}")
@@ -67,7 +65,8 @@ params['tol'] = 1e-3
 # params['beta'] = 1 / 0.9
 params['update_alpha_strategy'] = 'none'
 params['inexact_strategy'] = 'subgradient'
-params['const'] = 10
+params['const'] = 1e3
+params['schimdt_const'] = 1e3
 # params['inexact_strategy'] = 'sampling'
 solver = Solver(prob, params)
 
@@ -80,4 +79,4 @@ else:
     savemat(Lip_path, {"L": L})
     print(f"save Lipschitz constant to: {Lip_path}")
 
-info = solver.solve(alpha=1 / L, explore=True)
+info = solver.solve(alpha=1 / L, explore=True, scalesubgrad=False)

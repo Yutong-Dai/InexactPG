@@ -25,18 +25,18 @@ import numpy as np
 test = 'logit'
 # test = 'ls'
 if test == 'logit':
-    datasetName = "heart"
-    # datasetName = 'a9a'
+    # datasetName = "heart"
+    datasetName = 'a9a'
     # datasetName = 'w8a'
     loss = 'logit'
 else:
     # datasetName = 'cpusmall_scale'
-    datasetName = 'virusShare'
+    datasetName = 'cadata'
     loss = 'ls'
 
 
 lam_shrink = 0.1
-frac = 0.3
+frac = 0.1
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
 X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
@@ -81,8 +81,10 @@ else:
 
 # params['init_perturb'] = 10
 # params['update_alpha_strategy'] = 'model'
-params['safeguard_opt'] = 'const'
-params['safeguard_const'] = 1
+# params['safeguard_opt'] = 'const'
+# params['safeguard_const'] = 1
+params['safeguard_opt'] = 'none'
+params['safeguard_const'] = np.inf
 params['max_iter'] = 1e5
 solver = Solver(prob, params)
-info = solver.solve(alpha=1 / L)
+info = solver.solve(alpha=1 / L, explore=True, scalesubgrad=False)

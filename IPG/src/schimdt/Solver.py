@@ -40,7 +40,7 @@ class Solver:
                 y = x - s * gradfx
         return alpha
 
-    def proximal_update(self, x, fx, gradfx, alpha, epsilon):
+    def proximal_update(self, x, fx, gradfx, alpha, scalesubgrad, epsilon):
         self.bak = 0
         self.ipg_nnz, self.ipg_nz = None, None
         self.alpha_update = 0
@@ -54,12 +54,15 @@ class Solver:
                                             mode=self.mode, seed=0, max_attempts=self.max_attempts)
             else:
                 self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy, epsilon=epsilon,
-                                            x_init=x, maxiter_inner=self.maxiter_inner)
+                                            x_init=x, maxiter_inner=self.maxiter_inner, scalesubgrad=scalesubgrad)
             self.attempts += self.prob.attempt
             if self.xaprox is None:
                 # ipg solver failed
                 break
-            fval_xtrial = self.prob.funcf(self.xaprox)
+            try:
+                fval_xtrial = self.prob.funcf(self.xaprox)
+            except Exception as e:
+                fval_xtrial = np.inf
             d = self.xaprox - x
             d_norm_sq = np.dot(d.T, d)[0][0]
             difference = fval_xtrial - fx - (np.dot(gradfx.T, d)[0][0]) - d_norm_sq / (2 * alpha)
@@ -89,7 +92,8 @@ class Solver:
             self.subsolver_failed = True
             return None, None, None
 
-    def solve(self, x=None, alpha=None, explore=False):
+    def solve(self, x=None, alpha=None, explore=False, scalesubgrad=False):
+        print(f"solve scale subgradient:{scalesubgrad}")
         if not x:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
@@ -135,7 +139,7 @@ class Solver:
             print_cost = time.time() - print_start
             epsilon = self.schimdt_const / (iteration + 1)**(2 + self.delta)
             alpha_old = alpha
-            fval_xtrial, rval_xtrial, alpha = self.proximal_update(x, fvalx, gradfx, alpha, epsilon=epsilon)
+            fval_xtrial, rval_xtrial, alpha = self.proximal_update(x, fvalx, gradfx, alpha, scalesubgrad, epsilon)
             iteration_cost = time.time() - iteration_start - print_cost
             time_so_far += iteration_cost
             if self.printlevel > 0:

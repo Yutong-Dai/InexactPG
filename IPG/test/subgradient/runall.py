@@ -15,19 +15,21 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 import argparse
 from src.params import params
 from _batch import runall
+import numpy as np
 
 parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth testing.')
-parser.add_argument('--date', default='04_18_2021', type=str, help='experiment date')
+parser.add_argument('--date', default='04_23_2021', type=str, help='experiment date')
 parser.add_argument('--solver', default='naive', type=str, help='naive/schimdt')
 parser.add_argument('--loss', default='logit', type=str, help='ls/logit')
 parser.add_argument('--lam_shrink', default=0.1, type=float, help='lambda shrink parameters')
 parser.add_argument('--tol', default=1e-3, type=float, help='desired accuracy')
 parser.add_argument('--t', default=1e-12, type=float, help='params for naive')
-parser.add_argument('--safeguard_opt', default='schimdt', type=str, help='param')
-parser.add_argument('--safeguard_const', default=1.0, type=float, help='param')
+parser.add_argument('--safeguard_opt', default='none', type=str, help='param')
+parser.add_argument('--safeguard_const', default=np.inf, type=float, help='param')
 parser.add_argument('--schimdt_const', default=1.0, type=float, help='param')
 args = parser.parse_args()
 
+params['max_time'] = 2000
 params['inexact_strategy'] = 'subgradient'
 params['tol'] = args.tol
 params['update_alpha_strategy'] = 'none'
@@ -51,7 +53,7 @@ if args.loss == 'logit':
     datasets = ["a9a", "australian", "breast_cancer", "german_numer",
                 "ijcnn1", "ionosphere", "mushrooms", "splice", "sonar", "svmguide3", "w8a"]
 else:
-    datasets = ['abalone_scale', 'bodyfat_scale', 'cpusmall_scale',
+    datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                 'housing_scale', 'pyrim_scale', 'YearPredictionMSD',
                 'triazines_scale', 'virusShare']
 for percent in percents:

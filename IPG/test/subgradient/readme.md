@@ -16,4 +16,10 @@ c = 1e-1 / 1e0 / 1e1
 
 
 lambda_shrink = 0.1 / 0.01
-group = 0.1/0.3
+group = 0.1/0.2
+
+
+3. schimdt: min(c/k^3, myepsilon)
+
+
+c = 10^10 / 10^5 / 10^9

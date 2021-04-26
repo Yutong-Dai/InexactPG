@@ -5,4 +5,4 @@
 #PBS -l mem=4gb,vmem=4gb
 #PBS -q long
 cd /home/yud319/InexactPG/IPG/test/subgradient
-/home/yud319/anaconda3/bin/python runall.py --date 04_18_2021 --solver schimdt --loss logit --lam_shrink 0.1 --schimdt_const 10.0
+/home/yud319/anaconda3/bin/python runall.py --date 04_23_2021 --solver schimdt --loss logit --lam_shrink 0.1 --schimdt_const 10.0
