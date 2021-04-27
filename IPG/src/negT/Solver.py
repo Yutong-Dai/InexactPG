@@ -2,7 +2,7 @@
 File: Solver.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:44
-Last Modified: 2021-04-18 21:12
+Last Modified: 2021-04-18 16:56
 --------------------------------------------
 Description:
 '''
@@ -15,14 +15,14 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 import numpy as np
 import time
 import src.utils as utils
-import src.schimdt.printUtils as printUtils
+import src.negT.printUtils as printUtils
 
 
 class Solver:
     def __init__(self, prob, params):
         self.prob = prob
         self.__dict__.update(params)
-        self.version = "0.1 (2021-03-22) Schimdt variant"
+        self.version = "0.1.1 (2021-04-05)"
 
     def set_init_alpha(self, x):
         s = 1e-2
@@ -40,44 +40,21 @@ class Solver:
                 y = x - s * gradfx
         return alpha
 
-    def proximal_update(self, x, fx, gradfx, alpha, scalesubgrad, epsilon):
-        self.bak = 0
+    def proximal_update(self, x, gradfx, alpha, scalesubgrad, epsilon_safeguard=1e9):
         self.ipg_nnz, self.ipg_nz = None, None
-        self.alpha_update = 0
-        self.attempts = 0
         # incase the subgradient solver failed at the very beginning
         self.prox_optim = 1e9
-        while True:
-            if self.inexact_strategy == 'sampling':
-                self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy, epsilon=epsilon,
-                                            init_perturb=self.init_perturb,
-                                            mode=self.mode, seed=0, max_attempts=self.max_attempts)
-            else:
-                # start = time.time()
-                self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy, epsilon=epsilon,
-                                            x_init=x, maxiter_inner=self.maxiter_inner, scalesubgrad=scalesubgrad)
-                # self.subsolvertime = time.time() - start
-            self.attempts += self.prob.attempt
-            if self.xaprox is None:
-                # ipg solver failed
-                break
-            try:
-                fval_xtrial = self.prob.funcf(self.xaprox)
-            except Exception as e:
-                fval_xtrial = np.inf
-            d = self.xaprox - x
-            d_norm_sq = np.dot(d.T, d)[0][0]
-            difference = fval_xtrial - fx - (np.dot(gradfx.T, d)[0][0]) - d_norm_sq / (2 * alpha)
-            if difference <= 0:
-                self.subsolver_failed = False
-                break
-            else:
-                alpha *= 0.5
-                self.alpha_update += 1
+        if self.inexact_strategy == 'sampling':
+            self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
+                                        init_perturb=self.init_perturb, epsilon_safeguard=epsilon_safeguard,
+                                        t=self.t, mode=self.mode, seed=0, max_attempts=self.max_attempts)
+        else:
+            # start = time.time()
+            self.xaprox = self.prob.ipg(x, gradfx, alpha, self.inexact_strategy,
+                                        x_init=x, epsilon_safeguard=epsilon_safeguard,
+                                        t=self.t, maxiter_inner=self.maxiter_inner, scalesubgrad=scalesubgrad)
+            # self.subsolvertime = time.time() - start
         if self.xaprox is not None:
-            # print("===")
-            # print(f"subsolver:{self.attempts}")
-            rval_xtrial = self.prob.funcr(self.xaprox)
             # collect stats
             # switch from 2-norm to inf-norm
             # self.prox_optim = utils.l2_norm(self.prob.xprox - x)
@@ -90,15 +67,60 @@ class Solver:
             if self.pg_nz is not None:
                 self.ipg_nnz = utils.get_group_structure(self.xaprox, self.prob.K, self.prob.starts, self.prob.ends)
                 self.ipg_nz = self.prob.K - self.ipg_nnz
-            return fval_xtrial, rval_xtrial, alpha
+            self.d = self.xaprox - x
+            self.d_norm = utils.l2_norm(self.d)
+            self.d_norm_sq = self.d_norm ** 2
+            self.epsilon = self.prob.epsilon
+            self.subsolver_failed = False
         else:
-            self.status = -2
             self.subsolver_failed = True
-            return None, None, None
+            # ipg solver failed
+            self.epsilon = self.prob.epsilon
+            self.status = -2
 
-    def solve(self, x=None, alpha=None, explore=False, scalesubgrad=False):
-        print(f"solve scale subgradient:{scalesubgrad}")
-        if not x:
+    def linesearch(self, x, alpha, fvalx, rvalx):
+        # backtrack linesearch
+        self.bak = 0
+        xtrial = x + self.d
+        # time_start = time.time()
+        fval_xtrial = self.prob.funcf(xtrial)
+        rval_xtrial = self.prob.funcr(xtrial)
+        # time_end = time.time() - time_start
+        # print(f"Feval:{time_end:3.3e}")
+
+        if self.t > 0:
+            const = -self.eta * (self.d_norm_sq / alpha - np.sqrt(2 * self.epsilon / alpha) * self.d_norm - self.epsilon)
+            # print(1 / alpha - np.sqrt(2 * self.prob.ck / alpha) - self.prob.ck)
+            # print(f"LHS:{self.t/(2*alpha)*self.prox_optim**2: 3.6e} | RHS:{self.d_norm_sq / alpha - np.sqrt(2 * self.epsilon / alpha) * self.d_norm - self.epsilon}")
+            self.stepsize = 1
+            while True:
+                # print(f"LHS:{fval_xtrial - fvalx + rval_xtrial - rvalx:3.3e} | RHS:{self.stepsize * const:3.3e} | stepsize:{self.stepsize:3.3e} | const:{const:3.3e}")
+                if (fval_xtrial - fvalx + rval_xtrial - rvalx) <= self.stepsize * const:
+                    # print('===')
+                    return xtrial, fval_xtrial, rval_xtrial
+                if self.bak == self.max_back:
+                    # line search failed
+                    self.status = -1
+                    return None, None, None
+                self.bak += 1
+                self.stepsize *= self.xi
+                xtrial = x + self.stepsize * self.d
+                fval_xtrial = self.prob.funcf(xtrial)
+                rval_xtrial = self.prob.funcr(xtrial)
+        else:
+            if (fval_xtrial - fvalx + rval_xtrial - rvalx) <= 0:
+                self.stepsize = 1
+                return xtrial, fval_xtrial, rval_xtrial
+            else:
+                # meaning reject the current iterate
+                self.stepsize = -1
+                self.t += 0.1
+                if self.t > 0:
+                    self.t = 1e-12
+                return x, fvalx, rvalx
+
+    def solve(self, x=None, alpha=None, explore=True, scalesubgrad=False):
+        if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
             alpha = self.set_init_alpha(x)
@@ -141,32 +163,39 @@ class Solver:
                     printUtils.print_header(outID)
                 printUtils.print_iterates(iteration, Fvalx, outID)
             print_cost = time.time() - print_start
-            epsilon = self.schimdt_const / (iteration + 1)**(2 + self.delta)
-            alpha_old = alpha
-            # start = time.time()
-            fval_xtrial, rval_xtrial, alpha = self.proximal_update(x, fvalx, gradfx, alpha, scalesubgrad, epsilon)
-            # update = time.time() - start
-            # print(f"Iter:{iteration:5d} | One iter:{update:3.5e} | subsolver:{self.subsolvertime:3.5e} | inner:{self.attempts:5d}")
+            if self.safeguard_opt == 'const':
+                epsilon_safeguard = self.safeguard_const
+            elif self.safeguard_opt == 'schimdt':
+                epsilon_safeguard = self.safeguard_const / (iteration + 1)**3
+            elif self.safeguard_opt == 'laststep':
+                if iteration == 0:
+                    epsilon_safeguard = self.safeguard_const
+                else:
+                    # from last iteration
+                    epsilon_safeguard = self.safeguard_const * (self.d_norm * self.stepsize) ** 2 * self.prob.ck
+            elif self.safeguard_opt == 'none':
+                epsilon_safeguard = np.inf
+            # time_update_start = time.time()
+            self.proximal_update(x, gradfx, alpha, scalesubgrad, epsilon_safeguard)
+            # time_update_end = time.time() - time_update_start
             iteration_cost = time.time() - iteration_start - print_cost
             time_so_far += iteration_cost
             if self.printlevel > 0:
                 if not self.subsolver_failed:
-                    if explore:
-                        Eseq.append(epsilon)
-                        Gseq.append(self.prob.gap)
                     # change from 2-norm to inf-norm
                     # prox_diff = utils.l2_norm(self.xaprox - self.prob.xprox)
                     # print(f"outter: xaprox-xprox:{utils.linf_norm(self.xaprox - self.prob.xprox)}")
                     prox_diff = utils.linf_norm(self.xaprox - self.prob.xprox)
-                    printUtils.print_proximal_update_schimdt(alpha_old, self.alpha_update, self.attempts, self.prob.gap, epsilon,
-                                                             prox_diff, self.prox_optim, self.aprox_optim,
-                                                             self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
-                    subgrad_iters += self.attempts
-                    # print(f"Total subgradEvals:{subgrad_iters}")
+                    if explore:
+                        Eseq.append(self.epsilon)
+                        Gseq.append(self.prob.gap)
+                    printUtils.print_proximal_update(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
+                                                     self.epsilon, self.prob.eflag, prox_diff, self.prox_optim, self.aprox_optim,
+                                                     self.pg_nnz, self.ipg_nnz, self.pg_nz, self.ipg_nz, outID)
+                    subgrad_iters += self.prob.attempt
                 else:
-                    printUtils.print_proximal_update_schimdt_failed(alpha_old, self.alpha_update, self.attempts, self.prob.gap, epsilon, outID)
-            fevals += (self.alpha_update + 1)
-            # check termination
+                    printUtils.print_proximal_update_failed(alpha, self.t, self.prob.ck, self.prob.attempt, self.prob.gap,
+                                                            self.epsilon, outID)
             if iteration == 0:
                 tol = max(1, self.prox_optim) * self.tol
             if self.prox_optim <= tol:
@@ -182,15 +211,21 @@ class Solver:
                 break
 
             iteration_start = time.time()
+            # linesearch
+            xtrial, fval_xtrial, rval_xtrial = self.linesearch(x, alpha, fvalx, rvalx)
+            # print(f"Iter:{iteration:5d} | One iter:{time.time()-iteration_start + time_update_end:3.5e} | subsolver:{self.subsolvertime:3.5e} | inner:{self.prob.attempt:5d}")
+            fevals += (self.bak + 1)
+            baks += self.bak
             temp = time.time()
             if self.printlevel > 0:
-                pass
+                printUtils.print_linesearch(self.d_norm, self.bak, self.stepsize, outID)
             print_cost = time.time() - temp
+            # update proximal gradient stepsize
             if self.update_alpha_strategy == 'frac':
                 if self.bak > 0:
                     alpha *= self.zeta
             elif self.update_alpha_strategy == 'model':
-                d = self.xaprox - x
+                d = xtrial - x
                 d_norm_sq = utils.l2_norm(d) ** 2
                 dirder = np.dot(gradfx.T, d)[0][0]
                 actual_decrease = fval_xtrial - fvalx
@@ -203,7 +238,7 @@ class Solver:
 
             # perform update
             iteration += 1
-            x = self.xaprox
+            x = xtrial
             fvalx = fval_xtrial
             rvalx = rval_xtrial
             Fvalx = fvalx + rvalx
