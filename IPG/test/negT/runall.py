@@ -19,7 +19,7 @@ import numpy as np
 
 parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth testing.')
 parser.add_argument('--date', default='04_23_2021', type=str, help='experiment date')
-parser.add_argument('--solver', default='naive', type=str, help='naive/schimdt')
+parser.add_argument('--solver', default='negT', type=str, help='naive/schimdt/negT')
 parser.add_argument('--loss', default='logit', type=str, help='ls/logit')
 parser.add_argument('--lam_shrink', default=0.1, type=float, help='lambda shrink parameters')
 parser.add_argument('--tol', default=1e-3, type=float, help='desired accuracy')
@@ -33,7 +33,7 @@ params['max_time'] = 2000
 params['inexact_strategy'] = 'subgradient'
 params['tol'] = args.tol
 params['update_alpha_strategy'] = 'none'
-params['t'] = args.t
+params['t'] = -0.999
 params['safeguard_opt'] = args.safeguard_opt
 params['safeguard_const'] = args.safeguard_const
 params['schimdt_const'] = args.schimdt_const

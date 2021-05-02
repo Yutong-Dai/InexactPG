@@ -182,17 +182,37 @@ if __name__ == '__main__':
     #                        f'--t {t}',
     #                        f'--safeguard_opt {safeguard_opt}',
     #                        f'--safeguard_const {safeguard_const}')
+    # date = "04_23_2021"
+    # for loss in ['logit', 'ls']:
+    #     for lam in [0.1, 0.01]:
+    #         for schimdt_const in [1e1]:
+    #             create(f'schimdt_{loss}_{lam}_{schimdt_const}',
+    #                    outdir,
+    #                    scriptdir,
+    #                    '1', '4',
+    #                    'runall.py',
+    #                    f'--date {date}',
+    #                    f'--solver schimdt',
+    #                    f'--loss {loss}',
+    #                    f'--lam_shrink {lam}',
+    #                    f'--schimdt_const {schimdt_const}')
+    outdir = "IPG/test/log/cache"
+    scriptdir = "IPG/test/negT"
     date = "04_23_2021"
     for loss in ['logit', 'ls']:
         for lam in [0.1, 0.01]:
-            for schimdt_const in [1e1]:
-                create(f'schimdt_{loss}_{lam}_{schimdt_const}',
-                       outdir,
-                       scriptdir,
-                       '1', '4',
-                       'runall.py',
-                       f'--date {date}',
-                       f'--solver schimdt',
-                       f'--loss {loss}',
-                       f'--lam_shrink {lam}',
-                       f'--schimdt_const {schimdt_const}')
+            for safeguard_opt in ['none']:
+                safeguard_const = np.inf
+                for t in [-0.999]:
+                    create(f'negT_{loss}_{lam}_{t}_{safeguard_opt}_{safeguard_const}',
+                           outdir,
+                           scriptdir,
+                           '1', '4',
+                           'runall.py',
+                           f'--date {date}',
+                           f'--solver negT',
+                           f'--loss {loss}',
+                           f'--lam_shrink {lam}',
+                           f'--t {t}',
+                           f'--safeguard_opt {safeguard_opt}',
+                           f'--safeguard_const {safeguard_const}')

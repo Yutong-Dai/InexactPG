@@ -21,7 +21,7 @@ from src.params import fileTypeDict
 from src.regularizer import GL1
 from src.lossfunction import LogisticLoss, LeastSquares
 from src.negT.ProbGL1 import ProbGL1 as negTProbGL1
-from src.negT.Solver import Solver as negTProbGL1
+from src.negT.Solver import Solver as negTSolver
 from src.schimdt.ProbGL1 import ProbGL1 as schProbGL1
 from src.schimdt.Solver import Solver as schSolver
 
@@ -57,7 +57,7 @@ def _unit_problem(directory, solver, loss, lambda_shrinkage, percent, datasetNam
             solver = schSolver(prob, params)
         elif solver == 'negT':
             prob = negTProbGL1(f, r)
-            solver = negTProbGL1(prob, params)
+            solver = negTSolver(prob, params)
         if os.path.exists(Lip_path):
             L = loadmat(Lip_path)["L"][0][0]
             print(f"loading Lipschitz constant from: {Lip_path}")
@@ -80,7 +80,7 @@ def _unit_problem(directory, solver, loss, lambda_shrinkage, percent, datasetNam
 
 def runall(date, solver, loss, lambda_shrinkage, percent, datasets, params, dbDir='../../../db'):
     # create log directory
-    if solver == 'naive':
+    if solver == 'negT':
         directory = f"../log/{date}/{solver}/{loss}/{lambda_shrinkage}_{percent}_{params['t']}_{params['safeguard_opt']}_{params['safeguard_const']}"
     elif solver == 'schimdt':
         directory = f"../log/{date}/{solver}/{loss}/{lambda_shrinkage}_{percent}_'none'_{params['schimdt_const']}"

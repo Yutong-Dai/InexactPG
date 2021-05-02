@@ -86,9 +86,8 @@ def get_all_schimdt(logdir, date, loss, lam_shrink, percent, schimdt_consts=[1e-
         algo_df_dict[algorithm] = df
     return algo_df_dict
 
-def get_all_adaptive(logdir, date, loss, lam_shrink, percent, ts=[1e-12], excludes=None):
+def get_all_adaptive(logdir, date, loss, lam_shrink, percent, ts=[1e-12], excludes=None, solver = 'naive'):
     algo_df_dict = {}
-    solver = 'naive'
     for t in ts:
         algorithm = f'{solver}-{t}-none-inf'
         print(f'{algorithm}')
