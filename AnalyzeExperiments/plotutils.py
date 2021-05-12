@@ -28,7 +28,7 @@ def create_paths(logdir='../IPG/test/log', date='04_18_2021', solver='naive', lo
             list_all_npy_path += datasets_rmed
     return list_all_npy_path
 
-def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', 'iteration', 'F', 'optim','subgrad_iters']):
+def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', 'iteration', 'F', 'optim','subgrad_iters', 'nz', 'nnz']):
     info_lst = []
     for path in list_all_npy_path:
         info = np.load(path, allow_pickle=True).item()
@@ -113,6 +113,7 @@ class PerformanceProfile:
                 frame.loc[failed_idx, 'time'] = np.inf
                 frame.loc[failed_idx, 'iteration'] = np.inf
                 frame.loc[failed_idx, 'subgrad_iters'] = np.inf
+                frame.loc[failed_idx, 'nnz'] = np.inf
         print(f"All algorithms failed in {len(all_failled)} instances")
         self.all_failled = all_failled
         if overwriteFailed:
@@ -182,7 +183,7 @@ class PerformanceProfile:
                     negmin = np.min(bars_neg[bars_neg != -np.inf])
                     ratio_max = max(posmax, -negmin)
                     bars_pos[bars_pos == np.inf] = ratio_max * factor
-                    bars_neg[bars_neg == -np.inf] = ratio_max * factor
+                    bars_neg[bars_neg == -np.inf] = -ratio_max * factor
                     self.bars_pos = bars_pos
                     self.bars_neg = bars_neg
                 else:

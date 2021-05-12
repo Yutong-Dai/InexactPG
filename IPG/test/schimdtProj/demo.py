@@ -2,7 +2,7 @@
 File: debug.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-06-09 16:35
-Last Modified: 2021-04-18 16:57
+Last Modified: 2021-04-18 21:15
 --------------------------------------------
 Description:
 '''
@@ -18,25 +18,26 @@ import src.utils as utils
 from src.params import *
 from src.regularizer import GL1
 from src.lossfunction import LogisticLoss, LeastSquares
-from src.negT.ProbGL1 import ProbGL1
-from src.negT.Solver import Solver
-import numpy as np
+from src.schimdtProj.ProbGL1 import ProbGL1
+from src.schimdtProj.Solver import Solver
 
-test = 'logit'
+
+test = 'ls'
 # test = 'ls'
 if test == 'logit':
-    # datasetName = "heart"
+    # datasetName = 'diabetes'
     datasetName = 'a9a'
-    # datasetName = 'w8a'
+    # datasetName = 'australian'
     loss = 'logit'
 else:
     # datasetName = 'cpusmall_scale'
-    datasetName = 'cadata'
+    datasetName = 'abalone_scale'
     loss = 'ls'
 
-params['t'] = -0.999
+
 lam_shrink = 0.1
 frac = 0.1
+
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
 X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
@@ -60,23 +61,22 @@ Lambda = lammax * lam_shrink
 r = GL1(Lambda=Lambda, group=group)
 prob = ProbGL1(f, r)
 params['init_perturb'] = 1e3
-params['tol'] = 1e-6
+params['tol'] = 1e-3
 # params['beta'] = 1 / 0.9
 params['update_alpha_strategy'] = 'none'
 params['inexact_strategy'] = 'subgradient'
+params['schimdt_const'] = 0.1
+params['threshold'] = 1e-8
+# params['inexact_strategy'] = 'sampling'
+solver = Solver(prob, params)
 
 if os.path.exists(Lip_path):
     L = loadmat(Lip_path)["L"][0][0]
     print(f"loading Lipschitz constant from: {Lip_path}")
 else:
     L = utils.estimate_lipschitz(X, loss)
+    print(L)
     savemat(Lip_path, {"L": L})
     print(f"save Lipschitz constant to: {Lip_path}")
 
-# info = solver.solve(alpha=1 / L)
-
-params['safeguard_opt'] = 'none'
-params['safeguard_const'] = np.inf
-params['max_iter'] = 1e5
-solver = Solver(prob, params)
 info = solver.solve(alpha=1 / L, explore=True, scalesubgrad=False)

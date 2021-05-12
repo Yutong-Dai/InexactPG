@@ -1,4 +1,9 @@
 IPG/test/log/04_06_2021/*
 IPG/test/log/04_18_2021/*
+IPG/test/log/05_03_2021/*
 IPG/test/log/04_23_2021/*
 IPG/test/log/cache/*
+IPG/src/naiveProj/__pycache__/*
+IPG/src/schimdt/__pycache__/*
+IPG/src/schimdtProj/__pycache__/*
+IPG/src/negT/__pycache__/*

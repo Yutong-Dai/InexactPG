@@ -18,15 +18,15 @@ import src.utils as utils
 from src.params import *
 from src.regularizer import GL1
 from src.lossfunction import LogisticLoss, LeastSquares
-from src.negT.ProbGL1 import ProbGL1
-from src.negT.Solver import Solver
+from src.naiveProj.ProbGL1 import ProbGL1
+from src.naiveProj.Solver import Solver
 import numpy as np
 
 test = 'logit'
 # test = 'ls'
 if test == 'logit':
-    # datasetName = "heart"
-    datasetName = 'a9a'
+    datasetName = "a9a"
+    # datasetName = 'diabetes'
     # datasetName = 'w8a'
     loss = 'logit'
 else:
@@ -34,7 +34,7 @@ else:
     datasetName = 'cadata'
     loss = 'ls'
 
-params['t'] = -0.999
+
 lam_shrink = 0.1
 frac = 0.1
 fileType = fileTypeDict[datasetName]
@@ -47,8 +47,8 @@ else:
 p = X.shape[1]
 num_of_groups = max(int(p * frac), 2)
 group = utils.gen_group(p, num_of_groups)
-lammax_path = f'../../../../GroupFaRSA/db/lammax-{datasetName}-{frac}.mat'
-Lip_path = f'../../../../GroupFaRSA/db/Lip-{datasetName}.mat'
+lammax_path = f'../../../db/lammax-{datasetName}-{frac}.mat'
+Lip_path = f'../../../db/Lip-{datasetName}.mat'
 if os.path.exists(lammax_path):
     lammax = loadmat(lammax_path)["lammax"][0][0]
     print(f"loading lammax from: {lammax_path}")
@@ -60,10 +60,13 @@ Lambda = lammax * lam_shrink
 r = GL1(Lambda=Lambda, group=group)
 prob = ProbGL1(f, r)
 params['init_perturb'] = 1e3
-params['tol'] = 1e-6
+params['tol'] = 1e-3
 # params['beta'] = 1 / 0.9
 params['update_alpha_strategy'] = 'none'
+params['t'] = 1e-12
 params['inexact_strategy'] = 'subgradient'
+# params['inexact_strategy'] = 'sampling'
+solver = Solver(prob, params)
 
 if os.path.exists(Lip_path):
     L = loadmat(Lip_path)["L"][0][0]
@@ -73,10 +76,10 @@ else:
     savemat(Lip_path, {"L": L})
     print(f"save Lipschitz constant to: {Lip_path}")
 
-# info = solver.solve(alpha=1 / L)
-
+params['threshold'] = 1e-8
 params['safeguard_opt'] = 'none'
 params['safeguard_const'] = np.inf
+params['max_iter'] = 1e5
 params['max_iter'] = 1e5
 solver = Solver(prob, params)
 info = solver.solve(alpha=1 / L, explore=True, scalesubgrad=False)

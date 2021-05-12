@@ -1,0 +1,8 @@
+#PBS -N schimdt_logit_0.01_10.0
+#PBS -e /home/yud319/InexactPG/IPG/test/log/cache/schimdt_logit_0.01_10.0.err
+#PBS -o /home/yud319/InexactPG/IPG/test/log/cache/schimdt_logit_0.01_10.0.out
+#PBS -l nodes=1:ppn=4
+#PBS -l mem=4gb,vmem=4gb
+#PBS -q long
+cd /home/yud319/InexactPG/IPG/test/subgradientProj
+/home/yud319/anaconda3/bin/python runall.py --date 05_03_2021 --solver schimdt --loss logit --lam_shrink 0.01 --schimdt_const 10.0
