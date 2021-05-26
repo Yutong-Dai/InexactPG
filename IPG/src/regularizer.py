@@ -29,10 +29,11 @@ class OGL1:
         # a np.array that stores the number of group that each coordinate belongs to
         self.freq = np.zeros((self.p, 1))
         self.group_size = np.zeros(self.K)
-        for i in range(len(starts)):
+        self.groups = {}
+        for i in range(self.K):
             self.freq[starts[i]:ends[i] + 1] += 1
             self.group_size[i] = ends[i] - starts[i] + 1
-        # self.Lambda_group = np.ones(self.K)
+            self.groups[i] = np.arange(starts[i], ends[i] + 1)
         self.Lambda_group = Lambda * np.sqrt(self.group_size)
         self.starts = np.array(starts)
         # since python `start:end` will include `start` and exclude `end`,

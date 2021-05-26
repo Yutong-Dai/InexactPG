@@ -11,6 +11,7 @@ import numpy as np
 from numba import jit
 import utils
 import warnings
+from np.linalg import pinv
 
 
 class Problem(ABC):
@@ -88,7 +89,7 @@ class ProbGL1(Problem):
         to_be_projected_groups = np.full(self.K, False)
         for i in range(self.K):
             start, end = self.starts[i], self.ends[i]
-            to_be_projected_groups[i] = utils.l2_norm(xk[start:end]) > self.Lambda_group
+            to_be_projected_groups[i] = utils.l2_norm(uk[start:end]) > self.Lambda_group
         weights_proj_grp = self.Lambda_group[to_be_projected_groups]
         index_proj_grp = self.full_group_index[to_be_projected_groups]
         starts, ends = self.starts[to_be_projected_groups], self.ends[to_be_projected_groups]
@@ -100,42 +101,100 @@ class ProbGL1(Problem):
         lambda_full = np.zeros((self.K, 1))
 
         iters = 0
-        B = len(index_proj_grp)
-        if B == 0:
+        GA = len(index_proj_grp)
+        if GA == 0:
             # in this case, the porjection is equivalent to identify operator
             # z = xk - alphak * gradfxk
             # therefore, the proximal operator is evaluated exactly, which is 0
             x = np.zeros_like(xk)
             return x
-        I = np.zeros((self.p, B))
+        I = np.zeros((self.p, GA))
         # set up the indicator functio 1{j\in g}
-        for j in range(len(B)):
+        for j in range(len(GA)):
             I[starts[j]:ends[j], j] = 1
         # ---------------------------- Projected Newton ---------------------------------
+        i_null = 0  # counter for early termination
         while True:
             iters += 1
             # ----------------------- perform update -------------------------
             # calculate gradient of the dual objective
-            denominator = 1 / (1 + I@lambda_working)
+            s_working = I@lambda_working
+            denominator = 1 / (1 + s_working)
             grad = weights_proj_grp**2 - I.T@((uk * denominator)**2)
+            # --------------------- hand stepsize eps=0.001 modify later ---------
             epsilon_enlargment = min(0.001, utils.l2_norm(lambda_working - max(0, lambda_working - grad)))
             tmp = 2 * (uk**2) * (denominator**3)
 
-            I_inactive = np.logical_or(grad <= 0.0, lambda_working > epsilon_enlargment)
-            I_inactive = np.where(I_inactive == True)
+            # inactive: not in the I^+ set
+            I_inactive = np.union1d(np.where(grad.reshape(-1) <= 0.0), np.where(lambda_working.reshape(-1) > epsilon_enlargment))
             n_inactive = len(I_inactive)
-            B_inactive = np.zeros((n_inactive, n_inactive))
-
+            # for early termination purpose
+            if n_inactive == 0:
+                i_null += 1
+            else:
+                i_null = 0
+            G_inactive = np.zeros((n_inactive, n_inactive))
             for j in range(n_inactive):
-                _start = starts[I_inactive[j]]
-                B_inactive[j,j] = np.sum(tmp[: ])
-            # check termination
+                idx_j = I_inactive[j]
+                G_inactive[j, j] = np.sum(tmp[self.r.groups[idx_j]])
+                for s in range(j + 1, n_inactive):
+                    idx_s = self.r.groups[I_inactive[s]]
+                    idx = np.intersect1d(idx_j, idx_s)
+                    G_inactive[j, s] = np.sum(tmp[idx])
+                    G_inactive[s, j] = G_inactive[j, s]
+            p_inactive = pinv(G_inactive)@grad[I_inactive]
 
+            # active: in the I^+ set
+            I_active = np.intersect1d(np.where(grad.reshape(-1) >= 0.0), np.where(lambda_working.reshape(-1) <= epsilon_enlargment))
+            n_active = len(I_active)
+
+            G_active = np.zeros(n_active, 1)
+            for j in range(n_active):
+                idx_j = I_active[j]
+                G_active[j] = np.sum(tmp[idx])
+            p_active = grad[I_active] / G_active
+
+            # backtrack line-search
+            dirder_inactive = grad[I_active].T@p_inactive
+            bak = 0
+            stepsize = 1.0
+            while True:
+                lambda_trial = np.zeros(GA, 1)
+                lambda_trial[I_active] = np.maximum(0, lambda_working[I_active] - stepsize * p_active)
+                lambda_trial[I_inactive] = np.maximum(0, lambda_working[I_inactive] - stepsize * p_inactive)
+                s_trial = I@lambda_trial
+                fdiff = (uk**2).T@(I@((lambda_trial - lambda_working)) / ((1 + s_trial) * (1 + s_working))) + np.sum(weights_proj_grp**2 * (lambda_working - lambda_trial))
+                dirder_active = grad[I_active].T@(lambda_working[I_active] - lambda_trial[I_active])
+                if fdiff < params['eta'] * (stepsize * dirder_inactive + dirder_active):
+                    break
+                if bak > 100:
+                    raise ValueError("Line-search errors!")
+                stepsize *= params['xi']
+                bak += 1
+            lambda_working = lambda_trial
+            # check termination
             # case I: max number of iterations reached
             if iters > params['subprob_maxiter']:
                 flag = 'maxiters'
                 break
-            # case II: desidered termination conditon
+            # case II: solve full space projection for 5 consequitive iterations
+            #          as suggested by authors, early termination
+            if i_null == 5:
+                flag = 'erlystop'
+                break
+            # case III: desidered termination conditon
+            feas_cond = np.all(grad[lambda_working == 0] >= 0)
+            # ----------------------- change later -------------------------
+            optimality_cond = np.all(np.abs(grad[lambda_working > 0]) <= 1e-3)
+            if feas_cond and optimality_cond:
+                flag = 'desirable'
+                break
+
+        s_working = I @ lambda_working
+        x = uk * (1 - 1 / (1 + s_working))
+
+        lambda_full[to_be_projected_groups] = lambda_working
+        return x, lambda_full, flag, iters
 
     def _duality_gap(self, x, y, xk, gradfxk, alphak):
         gradient_step = xk - alphak * gradfxk
