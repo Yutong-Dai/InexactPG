@@ -6,12 +6,13 @@ Last Modified: 2021-03-22 21:58
 --------------------------------------------
 Description:
 '''
+import sys
+sys.path.append("../")
 from abc import ABC, abstractclassmethod
 import numpy as np
 from numba import jit
-import utils
-import warnings
-from np.linalg import pinv
+import src.utils as utils
+from numpy.linalg import pinv
 
 
 class Problem(ABC):
@@ -49,7 +50,7 @@ class Problem(ABC):
         pass
 
 
-class ProbGL1(Problem):
+class ProbOGL1(Problem):
     def __init__(self, f, r) -> None:
         super().__init__(f, r)
         self.K = self.r.K
