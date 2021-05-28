@@ -2,12 +2,11 @@
 File: Problem.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 01:42
-Last Modified: 2021-05-27 22:25
+Last Modified: 2021-05-26 23:01
 --------------------------------------------
 Description:
 '''
 import sys
-import warnings
 sys.path.append("../")
 from abc import ABC, abstractclassmethod
 import numpy as np
@@ -91,11 +90,10 @@ class ProbOGL1(Problem):
         to_be_projected_groups = np.full(self.K, False)
         for i in range(self.K):
             start, end = self.starts[i], self.ends[i]
-            to_be_projected_groups[i] = utils.l2_norm(uk[start:end]) > alphak * self.Lambda_group[i]
-        weights_proj_grp = alphak * self.Lambda_group[to_be_projected_groups]
+            to_be_projected_groups[i] = utils.l2_norm(uk[start:end]) > self.Lambda_group[i]
+        weights_proj_grp = self.Lambda_group[to_be_projected_groups]
         index_proj_grp = self.full_group_index[to_be_projected_groups]
         starts, ends = self.starts[to_be_projected_groups], self.ends[to_be_projected_groups]
-        self.dualProbDim = len(index_proj_grp)
         # initialize the dual variable
         if not lambda_init:
             lambda_working = np.zeros((self.K, 1))[index_proj_grp]
@@ -106,13 +104,12 @@ class ProbOGL1(Problem):
         iters = 0
         GA = len(index_proj_grp)
         if GA == 0:
-            # in this case, the projection is equivalent to identity operator
+            # in this case, the porjection is equivalent to identify operator
             # z = xk - alphak * gradfxk
             # therefore, the proximal operator is evaluated exactly, which is 0
             x = np.zeros_like(xk)
             flag = 'exactsol'
-            gap = epsilon = 0.0
-            return x, lambda_full, flag, iters, gap, epsilon
+            return x, lambda_full, flag, iters
         I = np.zeros((self.p, GA))
         # set up the indicator functio 1{j\in g}
         for j in range(GA):
@@ -168,74 +165,53 @@ class ProbOGL1(Problem):
             stepsize = 1.0
             lambda_trial = np.zeros((GA, 1))
             flag = True
-            while isContinue:
+            while flag:
                 # print(stepsize)
                 lambda_trial[I_active] = np.maximum(0, lambda_working[I_active] - stepsize * p_active)
                 lambda_trial[I_inactive] = np.maximum(0, lambda_working[I_inactive] - stepsize * p_inactive)
                 s_trial = I @ lambda_trial
                 fdiff = (uk**2).T @ (I @ ((lambda_trial - lambda_working)) / ((1 + s_trial) * (1 + s_working))) + np.sum(weights_proj_grp**2 * (lambda_working - lambda_trial))
                 dirder_active = grad[I_active].T @ (lambda_working[I_active] - lambda_trial[I_active])
-                rhs = params['eta'] * (stepsize * dirder_inactive + dirder_active)
-                # print(f"iter: {bak} | fdiff:{fdiff[0][0]:2.6e} | rhs:{params['eta'] * (stepsize * dirder_inactive + dirder_active)[0][0]:2.6e}")
-                if np.abs(fdiff) <= 1e-18 and np.abs(rhs) <= 1e-18:
-                    isContinue = False
-                else:
-                    isContinue = fdiff < rhs
+                # print(f"fdiff:{fdiff} | rhs:{params['eta'] * (stepsize * dirder_inactive + dirder_active)}")
+                flag = fdiff < params['eta'] * (stepsize * dirder_inactive + dirder_active)
                 if bak > 100:
-                    # line search failed
-                    flag = 'lnscfail'
-                    gap = epsilon = 0.0
-                    warnings.warn("Linesearch failed in projected Newton")
-                    return None, None, flag, iters, None, None
+                    raise ValueError("Line-search errors!")
                 stepsize *= params['xi']
                 bak += 1
-            # print("------------------")
+            # print("=======")
             lambda_working = lambda_trial
             # check termination
             # case I: max number of iterations reached
             if iters > params['subprob_maxiter']:
                 flag = 'maxiters'
-                warnings.warn("inexactness conditon is definitely not satisfied")
                 break
             # case II: solve full space projection for 5 consequitive iterations
             #          as suggested by authors, early termination
             if i_null == 5:
-                warnings.warn("inexactness conditon may not satisfied")
                 flag = 'erlystop'
                 break
             # case III: desidered termination conditon
             feas_cond = np.all(grad[lambda_working == 0] >= 0)
-            s_working = I @ lambda_working
-            x = uk * (1 - 1 / (1 + s_working))  # hat_x_{k+1}
-            diff = (x - uk) / alphak
-            y = min(1, 1 / self.r.dual(diff)) * diff
-            if params['inexact_type'] == 1:
-                gap = self._duality_gap(x, y, uk, alphak)
-                sk = x - xk
-                self.ck = (np.sqrt(6 / ((1 + params['gamma1']) * alphak)) - np.sqrt(2 / alphak)) ** 2 / 4
-                epsilon = self.ck * (np.dot(sk.T, sk)[0][0])
-                inexact_cond = (gap <= epsilon)
-                # print(f" gap:{gap:3.4e} | epsilon:{epsilon:3.4e}")
-            elif params['inexact_type'] == 2:
-                raise ValueError("not implemeted!")
-            else:
-                raise ValueError("not implemeted!")
-            # print(iters)
-            # print(x.T)
-            # print("======")
-            if feas_cond and inexact_cond:
+            # ----------------------- change later -------------------------
+            optimality_cond = np.all(np.abs(grad[lambda_working > 0]) <= 1e-6)
+            if feas_cond and optimality_cond:
                 flag = 'desired '
                 break
-            # if feas_cond and iters >= 7:
-            #     flag = 'desired '
-            #     break
-        lambda_full[to_be_projected_groups] = lambda_working
-        return x, lambda_full, flag, iters, gap, epsilon
 
-    def _duality_gap(self, x, y, uk, alphak):
-        temp = x - uk
-        # primal = np.dot(temp.T, temp)[0][0] / (2 * alphak) + self.r.func_exact(x)
-        primal = np.dot(temp.T, temp)[0][0] / (2 * alphak) + self.r.func_ub(x)
-        dual_negative = ((alphak / 2) * (np.dot(y.T, y)) + np.dot(uk.T, y))[0][0]
-        # print(f" primal:{primal:3.4e} | dual_negative:{dual_negative:3.4e}")
+        s_working = I @ lambda_working
+        x = uk * (1 - 1 / (1 + s_working))
+
+        lambda_full[to_be_projected_groups] = lambda_working
+        return x, lambda_full, flag, iters
+
+    def _duality_gap(self, x, y, xk, gradfxk, alphak):
+        gradient_step = xk - alphak * gradfxk
+        temp = x - gradient_step
+        try:
+            primal = np.dot(temp.T, temp)[0][0] / (2 * alphak) + self.r.evaluate_function_value_jit(x)
+        except Exception as e:
+            print(e)
+            primal = 0
+            self.overflow = True
+        dual_negative = ((alphak / 2) * (np.dot(y.T, y)) + np.dot(gradient_step.T, y))[0][0]
         return primal + dual_negative

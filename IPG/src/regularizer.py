@@ -2,7 +2,7 @@
 File: regularizer.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-04-18 10:18
-Last Modified: 2021-04-18 10:36
+Last Modified: 2021-05-26 23:46
 --------------------------------------------
 Description:
 '''
@@ -106,6 +106,6 @@ def _dual_jit(y, K, starts, ends, Lambda_group):
     for i in range(K):
         start, end = starts[i], ends[i]
         yg = y[start:end]
-        temp = (np.sqrt(np.dot(yg * yg))[0][0]) / Lambda_group[i]
+        temp = np.sqrt(np.sum(yg * yg)) / Lambda_group[i]
         max_group_norm = max(max_group_norm, temp)
     return max_group_norm
