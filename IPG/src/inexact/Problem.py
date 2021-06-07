@@ -60,6 +60,7 @@ class ProbOGL1(Problem):
         self.ends = self.r.ends
         self.Lambda_group = self.r.Lambda_group.reshape(-1, 1)
         self.full_group_index = np.arange(self.K)
+        self.M = np.sqrt(np.sum(self.Lambda_group ** 2))
 
     def funcf(self, x):
         return self.f.evaluate_function_value(x)
@@ -76,7 +77,7 @@ class ProbOGL1(Problem):
         # least square and logit loss doesn't require this
         return self.f.gradient()
 
-    def ipg(self, xk, gradfxk, alphak, params, lambda_init=None):
+    def ipg(self, xk, gradfxk, alphak, params, lambda_init=None, rxk=None, outter_iter=None):
         """
             perform projected newton to solve the proximal problem
             return the approximation to prox_{alphak,r}(xk-alphak*gradfxk)
@@ -97,7 +98,7 @@ class ProbOGL1(Problem):
         starts, ends = self.starts[to_be_projected_groups], self.ends[to_be_projected_groups]
         self.dualProbDim = len(index_proj_grp)
         # initialize the dual variable
-        if not lambda_init:
+        if lambda_init is None:
             lambda_working = np.zeros((self.K, 1))[index_proj_grp]
         else:
             lambda_working = lambda_init[index_proj_grp]
@@ -157,7 +158,7 @@ class ProbOGL1(Problem):
                 G_active = np.zeros((n_active, 1))
                 for j in range(n_active):
                     idx_j = I_active[j]
-                    G_active[j] = np.sum(tmp[idx])
+                    G_active[j] = np.sum(tmp[idx_j])
                 p_active = grad[I_active] / G_active
             else:
                 p_active = 0.0
@@ -167,7 +168,7 @@ class ProbOGL1(Problem):
             bak = 0
             stepsize = 1.0
             lambda_trial = np.zeros((GA, 1))
-            flag = True
+            isContinue = True
             while isContinue:
                 # print(stepsize)
                 lambda_trial[I_active] = np.maximum(0, lambda_working[I_active] - stepsize * p_active)
@@ -206,18 +207,29 @@ class ProbOGL1(Problem):
             # case III: desidered termination conditon
             feas_cond = np.all(grad[lambda_working == 0] >= 0)
             s_working = I @ lambda_working
-            x = uk * (1 - 1 / (1 + s_working))  # hat_x_{k+1}
-            diff = (x - uk) / alphak
-            y = min(1, 1 / self.r.dual(diff)) * diff
+            z = uk / (1 + s_working)  # hat_z_{k+1}
+            z = self._check_feasibility(z, alphak * self.Lambda_group)
+            x = uk - z  # hat_x_{k+1}
             if params['inexact_type'] == 1:
-                gap = self._duality_gap(x, y, uk, alphak)
                 sk = x - xk
                 self.ck = (np.sqrt(6 / ((1 + params['gamma1']) * alphak)) - np.sqrt(2 / alphak)) ** 2 / 4
                 epsilon = self.ck * (np.dot(sk.T, sk)[0][0])
-                inexact_cond = (gap <= epsilon)
+                bb = utils.l2_norm(x - uk) / alphak + self.M
+                aa = 0.5 / alphak
+                theta = -bb + np.sqrt(bb**2 + 4 * aa * epsilon)
+                # duality gap
+                gap = self._duality_gap(z, lambda_working, uk, s_working, weights_proj_grp)
+                inexact_cond = (gap <= theta)
                 # print(f" gap:{gap:3.4e} | epsilon:{epsilon:3.4e}")
             elif params['inexact_type'] == 2:
                 raise ValueError("not implemeted!")
+            elif params['inexact_type'] == 3:
+                epsilon = params['schimdt_const'] / (outter_iter ** params['delta'])
+                gap = self._duality_gap(z, lambda_working, uk, s_working, weights_proj_grp)
+                bb = utils.l2_norm(x - uk) / alphak + self.M
+                aa = 0.5 / alphak
+                theta = -bb + np.sqrt(bb**2 + 4 * aa * epsilon)
+                inexact_cond = (gap <= theta)
             else:
                 raise ValueError("not implemeted!")
             # print(iters)
@@ -230,12 +242,25 @@ class ProbOGL1(Problem):
             #     flag = 'desired '
             #     break
         lambda_full[to_be_projected_groups] = lambda_working
-        return x, lambda_full, flag, iters, gap, epsilon
+        return x, lambda_full, flag, iters, gap, epsilon, theta
 
-    def _duality_gap(self, x, y, uk, alphak):
-        temp = x - uk
-        # primal = np.dot(temp.T, temp)[0][0] / (2 * alphak) + self.r.func_exact(x)
-        primal = np.dot(temp.T, temp)[0][0] / (2 * alphak) + self.r.func_ub(x)
-        dual_negative = ((alphak / 2) * (np.dot(y.T, y)) + np.dot(uk.T, y))[0][0]
-        # print(f" primal:{primal:3.4e} | dual_negative:{dual_negative:3.4e}")
-        return primal + dual_negative
+    def _check_feasibility(self, z, bounds):
+        """
+            if z is in the set, return z itself
+            otherwise return scaled version
+        """
+        violation = False
+        for i in range(len(self.starts)):
+            start, end = self.starts[i], self.ends[i]
+            zg = z[start:end]
+            zg_norm = np.sqrt(np.sum(zg * zg))
+            if zg_norm > bounds[i]:
+                violation = True
+                z[start:end] = (bounds[i] / zg_norm) * zg
+        return z, violation
+
+    def _duality_gap(self, z, lambda_working, uk, s_working, weights_proj_grp):
+        primal = 0.5 * utils.l2_norm(z - uk) ** 2
+        dual = utils.l2_norm(uk)**2 - np.sum(weights_proj_grp**2 * lambda_working) - np.sum((uk**2 / (1 + s_working)))
+        gap = primal - dual
+        return gap

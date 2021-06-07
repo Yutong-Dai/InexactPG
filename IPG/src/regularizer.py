@@ -25,6 +25,7 @@ class OGL1:
         ends  = [4, 7, 9]
         """
         self.p = dim
+        self.Lambda = Lambda
         self.K = len(starts)
         # a np.array that stores the number of group that each coordinate belongs to
         self.freq = np.zeros((self.p, 1))
@@ -51,7 +52,7 @@ class OGL1:
             # note here self.ends is shifted by 1
             soc_constraints.append(cp.norm(y[self.starts[i]:self.ends[i]], 2) <= w[i])
         prob = cp.Problem(cp.Maximize(X.T @ y), soc_constraints)
-        prob.solve(solver=cp.SCS)
+        prob.solve(solver=cp.CPLEX)
         return prob.value
 
     def func_ub(self, X):

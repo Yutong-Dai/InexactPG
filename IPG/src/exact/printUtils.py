@@ -31,7 +31,7 @@ def print_algorithm(algodic, outID=None):
         contents = "\n" + "Algorithm Parameters:\n"
         count = -1
         for k, v in algodic.items():
-            if k not in ['prob', 'printlevel', 'printevery', 'max_attempts', 'version', 'delta']:
+            if k not in ['prob', 'printlevel', 'printevery', 'max_attempts', 'version', 'params']:
                 count += 1
                 contents += f" {k}: {v} "
                 if count % 4 == 3:
@@ -47,7 +47,7 @@ def print_header(outID=None):
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    column_titles = '  Iter      F    |   alpha   dim    subits   flag    gap    epsilon    aprox-optim  #z  #nz |  bak   stepsize  |d_full| |\n'
+    column_titles = '  Iter      F    |   alpha     dim   subits   flag        gap      epsilon   aprox-optim   #z   #nz  |  bak   stepsize  |d_full| |\n'
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
 
@@ -68,7 +68,7 @@ def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, aprox_optim, n
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    contents = f" {alpha:2.3e}  {dim:5d}    {subits:3d}   {flag}   {gap:2.3e}   {epsilon:2.3e}  {aprox_optim:2.3e}      {nz:4d}    {nnz:5d}  |"
+    contents = f" {alpha:2.3e} {dim:5d}    {subits:3d}    {flag}  {gap:+2.3e}  {epsilon:2.3e}  {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 
@@ -135,6 +135,5 @@ def print_result(info, outID=None):
     contents += 'Function evaluations:{:.>55}{:d}\n'.format("", info['fevals'])
     contents += 'Gradient evaluations:{:.>55}{:d}\n'.format("", info['gevals'])
     contents += 'Number of backtracks:{:.>55}{:d}\n'.format("", info['baks'])
-    contents += 'subgrad iters:{:.>55}{:d}\n'.format("", info['subgrad_iters'])
     with open(filename, "a") as logfile:
         logfile.write(contents)

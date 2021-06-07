@@ -11,16 +11,18 @@ sys.path.append("../")
 import numpy as np
 import time
 import src.utils as utils
-import src.printUtils as printUtils
+import src.exact.printUtils as printUtils
 
 
 class Solver:
     def __init__(self, prob, params):
         self.prob = prob
         self.__dict__.update(params)
+        self.params = params
         self.version = "0.1.1 (2021-05-27) OGL1 only"
 
     def linesearch(self, x, alpha, fvalx, rvalx):
+        self.bak = 0
         # backtrack linesearch
         xtrial = x + self.d
         fval_xtrial = self.prob.funcf(xtrial)
@@ -40,7 +42,7 @@ class Solver:
             fval_xtrial = self.prob.funcf(xtrial)
             rval_xtrial = self.prob.funcr(xtrial)
 
-    def solve(self, x=None, alpha=None, explore=True, scalesubgrad=False):
+    def solve(self, x=None, alpha=None, explore=True):
         if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
@@ -91,18 +93,23 @@ class Solver:
                 lambda_init = None
             else:
                 lambda_init = lambda_full
-            xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init)
+            if self.inexact_type == 1:
+                xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init)
+            elif self.inexact_type == 2:
+                xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init, rxk=rvalx)
+            else:
+                xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params,
+                                                                                lambda_init, outter_iter=iteration + 1)
             nz = np.sum(xaprox == 0)
             nnz = self.prob.p - nz
             # collect stats
             # switch from 2-norm to inf-norm
-            # self.aprox_optim = utils.l2_norm(self.xaprox - x)
-            aprox_optim = utils.linf_norm(xaprox - x)
-
+            # self.aprox_optim = utils.l2_norm(self.aprox - x)
             self.d = xaprox - x
+            aprox_optim = utils.linf_norm(self.d)
             self.d_norm = utils.l2_norm(self.d)
             self.d_norm_sq = self.d_norm ** 2
-            self.epsilon = self.prob.epsilon
+            self.epsilon = epsilon
             self.subsolver_failed = False
 
             iteration_cost = time.time() - iteration_start - print_cost
@@ -111,9 +118,9 @@ class Solver:
                 if explore:
                     Eseq.append(epsilon)
                     Gseq.append(gap)
-                printUtils.print_proximal_update(alpha, self.prob.dualProbdim, subits, flag, gap, epsilon, aprox_optim, nz, nnz, outID)
+                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subits, flag, gap, epsilon, aprox_optim, nz, nnz, outID)
             else:
-                printUtils.print_proximal_update(alpha, self.prob.dualProbdim, subits, flag, outID)
+                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subits, flag, outID)
 
             if iteration == 0:
                 tol = max(1, aprox_optim) * self.tol

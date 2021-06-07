@@ -2,7 +2,7 @@ import sys
 sys.path.append("../")
 
 import numpy as np
-from src.Problem import ProbOGL1
+from src.exact.Problem import ProbOGL1
 from src.regularizer import OGL1
 from src.utils import GenOverlapGroup
 
