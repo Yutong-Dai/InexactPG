@@ -47,7 +47,7 @@ def print_header(outID=None):
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    column_titles = '  Iter      F    |   alpha     dim   subits   flag        gap      epsilon   aprox-optim   #z   #nz  |  bak   stepsize  |d_full| |\n'
+    column_titles = '  Iter      f    |   alpha     dim   subits   flag        gap      epsilon   theta  aprox-optim   #z   #nz  |  bak   stepsize  |d_full| |\n'
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
 
@@ -63,12 +63,12 @@ def print_iterates(iteration, F, outID=None):
         logfile.write(contents)
 
 
-def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, aprox_optim, nz, nnz, outID=None):
+def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, aprox_optim, nz, nnz, outID=None):
     if outID is not None:
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    contents = f" {alpha:2.3e} {dim:5d}    {subits:3d}    {flag}  {gap:+2.3e}  {epsilon:2.3e}  {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
+    contents = f" {alpha:2.3e} {dim:5d}    {subits:3d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 

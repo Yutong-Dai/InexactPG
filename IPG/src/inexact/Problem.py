@@ -208,7 +208,8 @@ class ProbOGL1(Problem):
             feas_cond = np.all(grad[lambda_working == 0] >= 0)
             s_working = I @ lambda_working
             z = uk / (1 + s_working)  # hat_z_{k+1}
-            z = self._check_feasibility(z, alphak * self.Lambda_group)
+            z, violation = self._check_feasibility(z, alphak * self.Lambda_group)
+            print(violation)
             x = uk - z  # hat_x_{k+1}
             if params['inexact_type'] == 1:
                 sk = x - xk
@@ -220,7 +221,7 @@ class ProbOGL1(Problem):
                 # duality gap
                 gap = self._duality_gap(z, lambda_working, uk, s_working, weights_proj_grp)
                 inexact_cond = (gap <= theta)
-                # print(f" gap:{gap:3.4e} | epsilon:{epsilon:3.4e}")
+                print(f" gap:{gap:3.4e} | theta:{theta:3.4e} | epsilon:{epsilon:3.4e}")
             elif params['inexact_type'] == 2:
                 raise ValueError("not implemeted!")
             elif params['inexact_type'] == 3:

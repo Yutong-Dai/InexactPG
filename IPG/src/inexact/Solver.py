@@ -11,7 +11,7 @@ sys.path.append("../")
 import numpy as np
 import time
 import src.utils as utils
-import src.exact.printUtils as printUtils
+import src.inexact.printUtils as printUtils
 
 
 class Solver:
@@ -19,7 +19,7 @@ class Solver:
         self.prob = prob
         self.__dict__.update(params)
         self.params = params
-        self.version = "0.1.1 (2021-05-27) OGL1 only"
+        self.version = "0.1.1 (2021-06-07) OGL1 only"
 
     def linesearch(self, x, alpha, fvalx, rvalx):
         self.bak = 0
@@ -65,17 +65,16 @@ class Solver:
         baks = 0
         self.status = None
         time_so_far = 0
-        subgrad_iters = 0
         if explore:
-            Fseq = []
+            # Fseq = []
             Eseq = []
             Gseq = []
         iteration_start = time.time()
         fvalx = self.prob.funcf(x)
         rvalx = self.prob.funcr(x)
         Fvalx = fvalx + rvalx
-        if explore:
-            Fseq.append(Fvalx)
+        # if explore:
+        #     Fseq.append(Fvalx)
         gradfx = self.prob.gradf(x)
         fevals += 1
         gevals += 1
@@ -85,7 +84,7 @@ class Solver:
             if self.printlevel > 0:
                 if iteration % self.printevery == 0:
                     printUtils.print_header(outID)
-                printUtils.print_iterates(iteration, Fvalx, outID)
+                printUtils.print_iterates(iteration, fvalx, outID)
             print_cost = time.time() - print_start
 
             # ------------------- proximal operator calculation ---------------------------------------
@@ -94,12 +93,12 @@ class Solver:
             else:
                 lambda_init = lambda_full
             if self.inexact_type == 1:
-                xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init)
-            elif self.inexact_type == 2:
-                xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init, rxk=rvalx)
+                xaprox, lambda_full, flag, subits, gap, epsilon, theta = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init)
+            # elif self.inexact_type == 2:
+            #     xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init, rxk=rvalx)
             else:
-                xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params,
-                                                                                lambda_init, outter_iter=iteration + 1)
+                xaprox, lambda_full, flag, subits, gap, epsilon, theta = self.prob.ipg(x, gradfx, alpha, self.params,
+                                                                                       lambda_init, outter_iter=iteration + 1)
             nz = np.sum(xaprox == 0)
             nnz = self.prob.p - nz
             # collect stats
@@ -118,7 +117,7 @@ class Solver:
                 if explore:
                     Eseq.append(epsilon)
                     Gseq.append(gap)
-                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subits, flag, gap, epsilon, aprox_optim, nz, nnz, outID)
+                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subits, flag, gap, epsilon, theta, aprox_optim, nz, nnz, outID)
             else:
                 printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subits, flag, outID)
 
@@ -165,24 +164,24 @@ class Solver:
             iteration += 1
             x = xtrial
             fvalx = fval_xtrial
-            rvalx = rval_xtrial
-            Fvalx = fvalx + rvalx
+            # rvalx = rval_xtrial
+            # Fvalx = fvalx + rvalx
             gradfx = self.prob.gradf(x)
             gevals += 1
             # boost numerical performance if beta > 1
             alpha *= self.beta
-            if explore:
-                Fseq.append(Fvalx)
+            # if explore:
+            #     Fseq.append(Fvalx)
 
         info = {
-            'X': x, 'iteration': iteration, 'time': time_so_far, 'F': Fvalx,
+            'X': x, 'iteration': iteration, 'time': time_so_far, 'f': fvalx,
             'nz': nz, 'nnz': nnz, 'status': self.status,
             'fevals': fevals, 'gevals': gevals, 'baks': baks, 'optim': aprox_optim,
             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
             'K': self.prob.K
         }
         if explore:
-            info['Fseq'] = Fseq
+            # info['Fseq'] = Fseq
             info['Eseq'] = Eseq
             info['Gseq'] = Gseq
         if self.printlevel > 0:
