@@ -2,7 +2,7 @@
 File: debug.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-06-09 16:35
-Last Modified: 2021-05-27 22:42
+Last Modified: 2021-06-11 01:44
 --------------------------------------------
 Description:
 '''
@@ -75,6 +75,37 @@ else:
 # info = solver.solve(alpha=1 / L, explore=True)
 
 
+# datasetName = 'leu'
+# fileType = fileTypeDict[datasetName]
+# print("Working on: {}...".format(datasetName))
+# X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
+# if loss == 'logit':
+#     f = LogisticLoss(X, y, datasetName)
+# else:
+#     f = LeastSquares(X, y, datasetName)
+# p = X.shape[1]
+# num_grp = min(2000, math.ceil(p * 0.3))
+# grp_size = int(int(p / num_grp) * 2)
+# Lip_path = f'../../../db/Lip-{datasetName}.mat'
+# if os.path.exists(Lip_path):
+#     L = loadmat(Lip_path)["L"][0][0]
+#     print(f"loading Lipschitz constant from: {Lip_path}")
+# else:
+#     L = utils.estimate_lipschitz(X, loss)
+#     savemat(Lip_path, {"L": L})
+#     print(f"save Lipschitz constant to: {Lip_path}")
+
+# generator = utils.GenOverlapGroup(p, num_grp, grp_size)
+# starts, ends = generator.get_group()
+# r = OGL1(Lambda=0.1, dim=p, starts=starts, ends=ends)
+# prob = ProbOGL1(f, r)
+# params['tol'] = 1e-4
+# params['inexact_type'] = 1
+# params['subprob_maxiter'] = 1e2
+# solver = Solver(prob, params)
+# info = solver.solve(alpha=1 / L, explore=True)
+
+
 datasetName = 'a9a'
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
@@ -85,7 +116,7 @@ else:
     f = LeastSquares(X, y, datasetName)
 p = X.shape[1]
 num_grp = min(20, math.ceil(p * 0.3))
-grp_size = int(int(p / num_grp) * 2.0)
+grp_size = int(int(p / num_grp) * 2)
 Lip_path = f'../../../db/Lip-{datasetName}.mat'
 if os.path.exists(Lip_path):
     L = loadmat(Lip_path)["L"][0][0]
@@ -97,10 +128,41 @@ else:
 
 generator = utils.GenOverlapGroup(p, num_grp, grp_size)
 starts, ends = generator.get_group()
-r = OGL1(Lambda=0.01, dim=p, starts=starts, ends=ends)
+r = OGL1(Lambda=0.1, dim=p, starts=starts, ends=ends)
 prob = ProbOGL1(f, r)
-params['tol'] = 1e-4
-params['inexact_type'] = 1
-params['subprob_maxiter'] = 1e2
+params['tol'] = 1e-6
+params['inexact_type'] = 3
+params['warm_start'] = False
 solver = Solver(prob, params)
 info = solver.solve(alpha=1 / L, explore=True)
+
+
+# datasetName = 'duke'
+# fileType = fileTypeDict[datasetName]
+# print("Working on: {}...".format(datasetName))
+# X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
+# if loss == 'logit':
+#     f = LogisticLoss(X, y, datasetName)
+# else:
+#     f = LeastSquares(X, y, datasetName)
+# p = X.shape[1]
+# num_grp = min(200, math.ceil(p * 0.3))
+# grp_size = int(int(p / num_grp) * 2)
+# Lip_path = f'../../../db/Lip-{datasetName}.mat'
+# if os.path.exists(Lip_path):
+#     L = loadmat(Lip_path)["L"][0][0]
+#     print(f"loading Lipschitz constant from: {Lip_path}")
+# else:
+#     L = utils.estimate_lipschitz(X, loss)
+#     savemat(Lip_path, {"L": L})
+#     print(f"save Lipschitz constant to: {Lip_path}")
+
+# generator = utils.GenOverlapGroup(p, num_grp, grp_size)
+# starts, ends = generator.get_group()
+# r = OGL1(Lambda=0.01, dim=p, starts=starts, ends=ends)
+# prob = ProbOGL1(f, r)
+# params['tol'] = 1e-4
+# params['inexact_type'] = 1
+# params['subprob_maxiter'] = 1e2
+# solver = Solver(prob, params)
+# info = solver.solve(alpha=1 / L, explore=True)

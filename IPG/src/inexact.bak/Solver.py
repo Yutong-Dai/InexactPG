@@ -2,7 +2,7 @@
 File: Solver.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:44
-Last Modified: 2021-06-11 01:09
+Last Modified: 2021-06-07 22:56
 --------------------------------------------
 Description:
 '''
@@ -35,13 +35,13 @@ class Solver:
         problem_attribute += "Number of groups:{:.>32}\n".format(self.prob.r.K)
         if self.printlevel > 0:
             printUtils.print_problem(problem_attribute, self.version, outID)
-            # printUtils.print_algorithm(self.__dict__, outID)
-            printUtils.print_algorithm(self.params, outID)
+            printUtils.print_algorithm(self.__dict__, outID)
         # set up loggings
         info = {}
         iteration = 0
         fevals = 0
         gevals = 0
+        baks = 0
         self.status = None
         time_so_far = 0
         if explore:
@@ -54,7 +54,6 @@ class Solver:
         fevals += 1
         gevals += 1
         lambda_full = None
-        subits = 0
         while True:
             print_start = time.time()
             if self.printlevel > 0:
@@ -64,14 +63,17 @@ class Solver:
             print_cost = time.time() - print_start
 
             # ------------------- proximal operator calculation ---------------------------------------
-            if lambda_full is None or self.params['warm_start'] == False:
+            if lambda_full is None:
                 lambda_init = None
             else:
                 lambda_init = lambda_full
-            xaprox, lambda_full, flag, subit, gap, epsilon, theta, correction = self.prob.ipg(x, gradfx, alpha, self.params,
-                                                                                              outter_iter=iteration + 1,
-                                                                                              lambda_init=lambda_init, outID=outID)
-            subits += subit
+            if self.inexact_type == 1:
+                xaprox, lambda_full, flag, subits, gap, epsilon, theta, correction = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init)
+            elif self.inexact_type == 2:
+                xaprox, lambda_full, flag, subits, gap, epsilon = self.prob.ipg(x, gradfx, alpha, self.params, lambda_init, rxk=rvalx)
+            else:
+                xaprox, lambda_full, flag, subits, gap, epsilon, theta, correction = self.prob.ipg(x, gradfx, alpha, self.params,
+                                                                                                   lambda_init, outter_iter=iteration + 1)
             nz = np.sum(xaprox == 0)
             nnz = self.prob.p - nz
             # collect stats
@@ -90,10 +92,9 @@ class Solver:
                 if explore:
                     Eseq.append(epsilon)
                     Gseq.append(gap)
-                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subit, flag, gap,
-                                                 epsilon, theta, correction, aprox_optim, nz, nnz, outID)
+                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subits, flag, gap, epsilon, theta, correction, aprox_optim, nz, nnz, outID)
             else:
-                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subit, flag, outID)
+                printUtils.print_proximal_update(alpha, self.prob.dualProbDim, subits, flag, outID)
 
             if iteration == 0:
                 tol = max(1, aprox_optim) * self.tol
@@ -147,7 +148,7 @@ class Solver:
             'nz': nz, 'nnz': nnz, 'status': self.status,
             'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
-            'K': self.prob.K, 'subits': subits}
+            'K': self.prob.K}
         if explore:
             # info['Fseq'] = Fseq
             info['Eseq'] = Eseq

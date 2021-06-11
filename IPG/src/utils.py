@@ -2,7 +2,7 @@
 File: utils.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-07-01 13:49
-Last Modified: 2021-04-05 20:51
+Last Modified: 2021-06-07 23:38
 --------------------------------------------
 Description:
 '''
@@ -69,13 +69,25 @@ class GenOverlapGroup:
                     break
             starts[i] = start
             ends[i] = end
-        return starts, ends
+        return starts[:i], ends[:i]
 
 
 def lam_max(X, y, group, loss='logit'):
     """
     """
     pass
+
+
+def estimate_lipschitz(A, loss='logit'):
+    m, n = A.shape
+    if loss == 'ls':
+        hess = A.T @ A / m
+    elif loss == 'logit':
+        # acyually this is an upper bound on hess
+        hess = A.T @ A / (4 * m)
+    hess = hess.toarray()
+    L = np.max(np.linalg.eigvalsh(hess))
+    return L
 
 
 class AlgorithmError(Exception):

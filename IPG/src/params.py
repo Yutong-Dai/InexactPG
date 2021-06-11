@@ -2,7 +2,7 @@
 File: params.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2019-10-31 15:51
-Last Modified: 2021-05-27 22:43
+Last Modified: 2021-06-11 01:43
 --------------------------------------------
 Description:
 '''
@@ -11,7 +11,6 @@ params = {}
 # termination
 params['tol'] = 1e-6
 params['max_iter'] = 100000
-params['subprob_maxiter'] = 100
 params['max_time'] = 3600
 params['max_back'] = 100
 # print
@@ -26,15 +25,24 @@ params['zeta'] = 0.8
 # this trick is used in tfocs implementation
 # to boost numerical performance
 params['beta'] = 1  # 1 / 0.9
-params['update_alpha_strategy'] = 'frac'  # model / none /frac
+params['update_alpha_strategy'] = 'none'  # model / none /frac
 params['optimality_measure'] = 'aprox'  # iterates
-params['inexact_type'] = 1  # 1:mine 2: Lee 3:schimdt
+params['inexact_type'] = 1  # 1:mine 2: Lee-like 3:schimdt
 params['gamma1'] = 1e-12
-params['gamma2'] = 0.5
+params['gamma2'] = 1e-12
+params['nu'] = 0.1
 params['rtype'] = 'exact'
 # parameters for schimdt method
 params['delta'] = 3  # 1e-3
 params['schimdt_const'] = 1  # c/k^3
+# config for subsolvers
+params['subsolver'] = 'projectedNewton'
+params['warm_start'] = True
+params['subsolver_verbose'] = True
+params['projectedNewton'] = {}
+params['projectedNewton']['maxiter'] = 100
+params['projectedGradient'] = {}
+params['projectedGradient']['maxiter'] = 1000
 
 
 fileTypeDict = {}

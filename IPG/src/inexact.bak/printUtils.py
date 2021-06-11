@@ -2,7 +2,7 @@
 File: printUtils.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:45
-Last Modified: 2021-06-11 01:20
+Last Modified: 2021-06-07 23:09
 --------------------------------------------
 Description:
 '''
@@ -22,24 +22,6 @@ def print_problem(problem_attribute, version, outID=None):
         logfile.write(contents)
 
 
-# def print_algorithm(algodic, outID=None):
-#     if outID is not None:
-#         filename = '{}.txt'.format(outID)
-#     else:
-#         filename = 'log.txt'
-#     with open(filename, "a") as logfile:
-#         contents = "\n" + "Algorithm Parameters:\n"
-#         count = -1
-#         for k, v in algodic.items():
-#             if k not in ['prob', 'printlevel', 'printevery', 'version', 'params']:
-#                 count += 1
-#                 contents += f" {k}: {v} "
-#                 if count % 4 == 3:
-#                     contents += '\n'
-#                 else:
-#                     contents += '|'
-#         contents += '\n' + '*' * 80 + '\n'
-#         logfile.write(contents)
 def print_algorithm(algodic, outID=None):
     if outID is not None:
         filename = '{}.txt'.format(outID)
@@ -48,22 +30,15 @@ def print_algorithm(algodic, outID=None):
     with open(filename, "a") as logfile:
         contents = "\n" + "Algorithm Parameters:\n"
         count = -1
-        contents += 'Termination Conditions:\n'
-        contents += f" optimality measure: {algodic['optimality_measure']}| tol:{algodic['tol']} | maxiter:{algodic['max_iter']} | maxtime:{algodic['max_time']}\n"
-        contents += 'Lineserch Parameters:\n'
-        contents += f" eta:{algodic['eta']} | xi:{algodic['xi']} | zeta:{algodic['zeta']}\n"
-        contents += 'Proximal Stepsize update:\n'
-        contents += f" update strategy:{algodic['update_alpha_strategy']} | beta:{algodic['beta']}\n"
-        contents += f"Inexact Strategy:\n"
-        if algodic['inexact_type'] == 1:
-            contents += f" inexact type:{algodic['inexact_type']} | gamma1:{algodic['gamma1']}\n"
-        elif algodic['inexact_type'] == 2:
-            contents += f" inexact type:{algodic['inexact_type']} | gamma2:{algodic['gamma2']} | nu:{algodic['nu']}\n"
-        else:
-            contents += f" inexact type:{algodic['inexact_type']} | delta:{algodic['delta']} | schimdt_const:{algodic['schimdt_const']}\n"
-        contents += f"Subsolver configuration:\n"
-        contents += f" solver:{algodic['subsolver']} | warm start:{algodic['warm_start']} | verbose:{algodic['subsolver_verbose']} | maxiter:{algodic[algodic['subsolver']]['maxiter']}\n"
-        contents += '*' * 80 + '\n'
+        for k, v in algodic.items():
+            if k not in ['prob', 'printlevel', 'printevery', 'max_attempts', 'version', 'params']:
+                count += 1
+                contents += f" {k}: {v} "
+                if count % 4 == 3:
+                    contents += '\n'
+                else:
+                    contents += '|'
+        contents += '\n' + '*' * 80 + '\n'
         logfile.write(contents)
 
 
@@ -155,7 +130,6 @@ def print_result(info, outID=None):
     contents = "\nFinal Results\n"
     contents += "=" * 30 + '\n'
     contents += 'Iterations:{:.>65}{:d}\n'.format("", info['iteration'])
-    contents += 'Sub iters :{:.>65}{:d}\n'.format("", info['subits'])
     contents += 'CPU seconds:{:.>64}{:.4f}\n'.format("", info['time'])
     if info['nz'] is not None:
         contents += 'number of sparse groups:{:.>52}{:d}\n'.format("", info['nz'])
@@ -163,27 +137,5 @@ def print_result(info, outID=None):
         contents += 'Optimality error:{:.>59}{:8.6e}\n'.format("", info['optim'])
     contents += 'Function evaluations:{:.>55}{:d}\n'.format("", info['fevals'])
     contents += 'Gradient evaluations:{:.>55}{:d}\n'.format("", info['gevals'])
-    with open(filename, "a") as logfile:
-        logfile.write(contents)
-
-
-def print_subsolver_header(probdim, subsolver, inexact_type, outter_iter, outID=None):
-    if outID is not None:
-        filename = '{}_subprob.txt'.format(outID)
-    else:
-        filename = 'log_subprob.txt'
-    column_titles = f"------- probdim: {probdim:6d} | solver:{subsolver} | inexact:{inexact_type} | outter iters:{outter_iter:6d} -------------------\n"
-    column_titles += '  Iter   primal    dual        gap       theta | bak    stepsize \n'
-    with open(filename, "a") as logfile:
-        logfile.write(column_titles)
-
-
-def print_subsolver_iterates(iteration, primal, dual, gap, theta, bak, stepsize, outID=None):
-    if outID is not None:
-        filename = '{}_subprob.txt'.format(outID)
-    else:
-        filename = 'log_subprob.txt'
-
-    contents = f" {iteration:5d} {primal:3.3e} {dual:3.3e} {gap:3.3e} {theta:3.3e} | {bak:3d}    {stepsize:3.3e}\n"
     with open(filename, "a") as logfile:
         logfile.write(contents)

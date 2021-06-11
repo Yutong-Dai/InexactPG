@@ -2,7 +2,7 @@
 File: regularizer.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-04-18 10:18
-Last Modified: 2021-05-26 23:46
+Last Modified: 2021-06-07 21:16
 --------------------------------------------
 Description:
 '''
@@ -52,7 +52,8 @@ class OGL1:
             # note here self.ends is shifted by 1
             soc_constraints.append(cp.norm(y[self.starts[i]:self.ends[i]], 2) <= w[i])
         prob = cp.Problem(cp.Maximize(X.T @ y), soc_constraints)
-        prob.solve(solver=cp.CPLEX)
+        # prob.solve(solver=cp.CPLEX)
+        prob.solve(solver=cp.MOSEK)
         return prob.value
 
     def func_ub(self, X):

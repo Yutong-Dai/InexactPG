@@ -2,7 +2,7 @@
 File: Problem.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 01:42
-Last Modified: 2021-06-11 01:33
+Last Modified: 2021-06-10 01:04
 --------------------------------------------
 Description:
 '''
@@ -14,7 +14,6 @@ import numpy as np
 from numba import jit
 import src.utils as utils
 from numpy.linalg import pinv
-import src.inexact.printUtils as printUtils
 
 
 class Problem(ABC):
@@ -67,9 +66,6 @@ class ProbOGL1(Problem):
         return self.f.evaluate_function_value(x)
 
     def funcr(self, x, method='exact'):
-        """
-            Do not call it !!!!!!!
-        """
         if method == 'exact':
             return self.r.func_exact(x)
         if method == 'ub':
@@ -81,16 +77,15 @@ class ProbOGL1(Problem):
         # least square and logit loss doesn't require this
         return self.f.gradient()
 
-    def _projectedNewton(self, xk, gradfxk, alphak, params, outter_iter,
-                         lambda_init=None, outID=None):
+    def ipg(self, xk, gradfxk, alphak, params, lambda_init=None, outter_iter=None):
         """
             perform projected newton to solve the proximal problem
             return the approximation to prox_{alphak,r}(xk-alphak*gradfxk)
 
             termination type:
-                params['inexact_type'] 1: ck||s_k||^2
-                params['inexact_type'] 2: gamma_2
-                params['inexact_type'] 3: O(1/k^3)
+                option 1: ck||s_k||^2
+                option 2: gamma_2
+                option 3: O(1/k^3)
         """
         uk = xk - alphak * gradfxk
         # ----------------------- pre-screening to select variables to be projetced ---------
@@ -102,9 +97,6 @@ class ProbOGL1(Problem):
         index_proj_grp = self.full_group_index[to_be_projected_groups]
         starts, ends = self.starts[to_be_projected_groups], self.ends[to_be_projected_groups]
         self.dualProbDim = len(index_proj_grp)
-        if params['subsolver_verbose']:
-            printUtils.print_subsolver_header(self.dualProbDim, params['subsolver'],
-                                              params['inexact_type'], outter_iter, outID)
         # initialize the dual variable
         if lambda_init is None:
             lambda_working = np.zeros((self.K, 1))[index_proj_grp]
@@ -136,7 +128,7 @@ class ProbOGL1(Problem):
             s_working = I @ lambda_working
             denominator = 1 / (1 + s_working)
             grad = weights_proj_grp**2 - I.T @ ((uk * denominator)**2)
-            # --------------------- hand set eps=0.001 modify later ---------
+            # --------------------- hand stepsize eps=0.001 modify later ---------
             epsilon_enlargment = min(0.001, utils.l2_norm(lambda_working - np.maximum(0, lambda_working - grad)))
             tmp = 2 * (uk**2) * (denominator**3)
 
@@ -172,18 +164,20 @@ class ProbOGL1(Problem):
             else:
                 p_active = 0.0
 
-            #  ---------------------------- backtrack line-search -------------------------------
+            # backtrack line-search
             dirder_inactive = grad[I_inactive].T @ p_inactive
             bak = 0
             stepsize = 1.0
             lambda_trial = np.zeros((GA, 1))
             while True:
+                # print(stepsize)
                 lambda_trial[I_active] = np.maximum(0, lambda_working[I_active] - stepsize * p_active)
                 lambda_trial[I_inactive] = np.maximum(0, lambda_working[I_inactive] - stepsize * p_inactive)
                 s_trial = I @ lambda_trial
                 fdiff = (uk**2).T @ (I @ ((lambda_trial - lambda_working)) / ((1 + s_trial) * (1 + s_working))) + np.sum(weights_proj_grp**2 * (lambda_working - lambda_trial))
                 dirder_active = grad[I_active].T @ (lambda_working[I_active] - lambda_trial[I_active])
                 rhs = params['eta'] * (stepsize * dirder_inactive + dirder_active)
+                # print(f"iter: {bak} | fdiff:{fdiff[0][0]:2.6e} | rhs:{params['eta'] * (stepsize * dirder_inactive + dirder_active)[0][0]:2.6e}")
                 if np.abs(fdiff) <= 1e-18 and np.abs(rhs) <= 1e-18:
                     isContinue = False
                 else:
@@ -199,11 +193,15 @@ class ProbOGL1(Problem):
                     bak += 1
                 else:
                     break
-            # ----------------------- check termination -------------------------------------
+            # if len(I_active) > 0:
+            #     print(f'stepsize:{stepsize}, |lambda_active|_inf:{np.max(np.abs(lambda_trial[I_active])):3.3e}, |p_inactive|:{np.sqrt(np.sum(p_inactive * p_inactive)):3.3e}')
+            # else:
+            #     print(f'stepsize:{stepsize}, |p_inactive|:{np.sqrt(np.sum(p_inactive * p_inactive)):3.3e}')
+            # print("------------------")
             lambda_working = lambda_trial
             # check termination
             # case I: max number of iterations reached
-            if iters > params['projectedNewton']['maxiter']:
+            if iters > params['subprob_maxiter']:
                 flag = 'maxiters'
                 warnings.warn("inexactness conditon is definitely not satisfied")
                 break
@@ -214,7 +212,7 @@ class ProbOGL1(Problem):
                 flag = 'erlystop'
                 break
             # case III: desidered termination conditon
-            # feas_cond = np.all(grad[lambda_working == 0] >= 0)
+            feas_cond = np.all(grad[lambda_working == 0] >= 0)
             s_working = I @ lambda_working
             z = uk / (1 + s_working)  # hat_z_{k+1}
             z, violation = self._check_feasibility(z, alphak * self.Lambda_group)
@@ -228,42 +226,34 @@ class ProbOGL1(Problem):
                 bb = utils.l2_norm(x - uk) / alphak + self.M
                 aa = 0.5 / alphak
                 theta = -bb + np.sqrt(bb**2 + 4 * aa * epsilon)
+                # duality gap
+                gap = self._duality_gap(z, lambda_working, uk, s_working, weights_proj_grp)
+                inexact_cond = (gap <= theta)
+                # print(f" gap:{gap:3.4e} | theta:{theta:3.4e} | epsilon:{epsilon:3.4e}")
             elif params['inexact_type'] == 2:
-                sk = x - xk
-                epsilon = (1 - params['nu']) * (1 - params['gamma2']) * (np.dot(sk.T, sk)[0][0]) / (2 * alphak)
-                bb = utils.l2_norm(x - uk) / alphak + self.M
-                aa = (1 - (1 - 1 / params['nu']) * (1 - params['gamma2'])) / (2 * alphak)
-                theta = -bb + np.sqrt(bb**2 + 4 * aa * epsilon)
+                raise ValueError("not implemeted!")
             elif params['inexact_type'] == 3:
                 epsilon = params['schimdt_const'] / (outter_iter ** params['delta'])
+                gap = self._duality_gap(z, lambda_working, uk, s_working, weights_proj_grp)
                 bb = utils.l2_norm(x - uk) / alphak + self.M
                 aa = 0.5 / alphak
                 theta = -bb + np.sqrt(bb**2 + 4 * aa * epsilon)
+                inexact_cond = (gap <= theta)
             else:
                 raise ValueError("not implemeted!")
-            # duality gap
-            primal, dual, gap = self._duality_gap(z, lambda_working, uk, s_working, weights_proj_grp)
-            inexact_cond = (gap <= theta)
-            printUtils.print_subsolver_iterates(iters, primal, dual, gap, theta, bak, stepsize, outID)
+            # print(iters)
+            # print(x.T)
+            # print("======")
             # if feas_cond and inexact_cond and iters > 10:
-            # if feas_cond and inexact_cond:
-            if inexact_cond:
+            if feas_cond and inexact_cond:
                 flag = 'desired '
                 # print("======")
                 break
+            # if feas_cond and iters >= 7:
+            #     flag = 'desired '
+            #     break
         lambda_full[to_be_projected_groups] = lambda_working
         return x, lambda_full, flag, iters, gap, epsilon, theta, correction
-
-    def ipg(self, xk, gradfxk, alphak, params, outter_iter, lambda_init=None, outID=None):
-        """
-            inexactly solve the proximal graident problem
-        """
-        if params['subsolver'] == 'projectedNewton':
-            return self._projectedNewton(xk, gradfxk, alphak, params, outter_iter, lambda_init, outID)
-        elif params['subsolver'] == 'projectedGradient':
-            pass
-        else:
-            raise ValueError(f"Unknown subsolver:{params['subsolver']}.")
 
     def _check_feasibility(self, z, bounds):
         """
@@ -284,4 +274,4 @@ class ProbOGL1(Problem):
         primal = utils.l2_norm(z - uk) ** 2
         dual = utils.l2_norm(uk)**2 - np.sum(weights_proj_grp**2 * lambda_working) - np.sum((uk**2 / (1 + s_working)))
         gap = primal - dual
-        return primal, dual, gap
+        return gap

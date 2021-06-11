@@ -2,7 +2,7 @@
 File: debug.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2020-06-09 16:35
-Last Modified: 2021-05-27 22:42
+Last Modified: 2021-06-07 22:27
 --------------------------------------------
 Description:
 '''
@@ -16,7 +16,7 @@ import src.utils as utils
 from src.params import *
 from src.regularizer import OGL1
 from src.lossfunction import LogisticLoss, LeastSquares
-from src.Problem import ProbOGL1
+from src.exact.Problem import ProbOGL1
 from src.exact.Solver import Solver
 import numpy as np
 import math
@@ -85,8 +85,8 @@ if loss == 'logit':
 else:
     f = LeastSquares(X, y, datasetName)
 p = X.shape[1]
-num_grp = min(40, math.ceil(p * 0.3))
-grp_size = int(int(p / num_grp) * 2.0)
+num_grp = min(20, math.ceil(p * 0.3))
+grp_size = int(int(p / num_grp) * 1.5)
 Lip_path = f'../../../db/Lip-{datasetName}.mat'
 if os.path.exists(Lip_path):
     L = loadmat(Lip_path)["L"][0][0]
@@ -100,7 +100,7 @@ generator = utils.GenOverlapGroup(p, num_grp, grp_size)
 starts, ends = generator.get_group()
 r = OGL1(Lambda=0.01, dim=p, starts=starts, ends=ends)
 prob = ProbOGL1(f, r)
-params['tol'] = 1e-4
+params['tol'] = 1e-3
 params['inexact_type'] = 1
 params['subprob_maxiter'] = 1e2
 solver = Solver(prob, params)
