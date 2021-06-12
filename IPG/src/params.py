@@ -2,7 +2,7 @@
 File: params.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2019-10-31 15:51
-Last Modified: 2021-06-11 01:43
+Last Modified: 2021-06-11 14:44
 --------------------------------------------
 Description:
 '''
@@ -10,7 +10,7 @@ from numpy import inf
 params = {}
 # termination
 params['tol'] = 1e-6
-params['max_iter'] = 100000
+params['max_iter'] = 10000
 params['max_time'] = 3600
 params['max_back'] = 100
 # print
@@ -30,19 +30,27 @@ params['optimality_measure'] = 'aprox'  # iterates
 params['inexact_type'] = 1  # 1:mine 2: Lee-like 3:schimdt
 params['gamma1'] = 1e-12
 params['gamma2'] = 1e-12
-params['nu'] = 0.1
+params['nu'] = 0.5
 params['rtype'] = 'exact'
 # parameters for schimdt method
 params['delta'] = 3  # 1e-3
 params['schimdt_const'] = 1  # c/k^3
+
+# if True, then the stepsize alphak of Latent
+# overlapping group l1 will be scaled to the
+# same number (1-eta)/L for comparison purpose
+# hence gamma_1 will also be adjusted accordingly.
+params['scale_alpha'] = True
+
 # config for subsolvers
 params['subsolver'] = 'projectedNewton'
 params['warm_start'] = True
-params['subsolver_verbose'] = True
+params['subsolver_verbose'] = False
 params['projectedNewton'] = {}
 params['projectedNewton']['maxiter'] = 100
-params['projectedGradient'] = {}
-params['projectedGradient']['maxiter'] = 1000
+params['projectedGD'] = {}
+params['projectedGD']['maxiter'] = 1000
+params['projectedGD']['stepsize'] = 1
 
 
 fileTypeDict = {}

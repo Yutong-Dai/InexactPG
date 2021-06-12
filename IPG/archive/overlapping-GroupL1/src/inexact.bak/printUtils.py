@@ -2,7 +2,7 @@
 File: printUtils.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:45
-Last Modified: 2021-06-07 23:09
+Last Modified: 2021-06-11 14:26
 --------------------------------------------
 Description:
 '''
@@ -71,7 +71,7 @@ def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, project
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    contents = f" {alpha:2.3e} {dim:5d}    {subits:3d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:3d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
+    contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:3d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 

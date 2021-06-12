@@ -2,10 +2,11 @@
 File: printUtils.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:45
-Last Modified: 2021-06-11 01:20
+Last Modified: 2021-06-12 10:40
 --------------------------------------------
 Description:
 '''
+import datetime
 
 
 def print_problem(problem_attribute, version, outID=None):
@@ -14,9 +15,11 @@ def print_problem(problem_attribute, version, outID=None):
     else:
         filename = 'log.txt'
     with open(filename, "a") as logfile:
-        contents = "\n" + "=" * 80
+        contents = "\n" + "=" * 85
         contents += "\n       Inexact Proximal Gradient Type Method   (version:{})  \n".format(version)
-        contents += "=" * 80 + '\n'
+        time = datetime.datetime.now()
+        contents += f"                        Excuted at {time.year}-{time.month}-{time.day} {time.hour}:{time.minute}:{time.second}\n"
+        contents += "=" * 85 + '\n'
         contents += "Problem Summary\n"
         contents += problem_attribute
         logfile.write(contents)
@@ -47,13 +50,12 @@ def print_algorithm(algodic, outID=None):
         filename = 'log.txt'
     with open(filename, "a") as logfile:
         contents = "\n" + "Algorithm Parameters:\n"
-        count = -1
         contents += 'Termination Conditions:\n'
         contents += f" optimality measure: {algodic['optimality_measure']}| tol:{algodic['tol']} | maxiter:{algodic['max_iter']} | maxtime:{algodic['max_time']}\n"
         contents += 'Lineserch Parameters:\n'
         contents += f" eta:{algodic['eta']} | xi:{algodic['xi']} | zeta:{algodic['zeta']}\n"
         contents += 'Proximal Stepsize update:\n'
-        contents += f" update strategy:{algodic['update_alpha_strategy']} | beta:{algodic['beta']}\n"
+        contents += f" update strategy:{algodic['update_alpha_strategy']} | beta:{algodic['beta']} | scale alpha for comparsion:{algodic['scale_alpha']}\n"
         contents += f"Inexact Strategy:\n"
         if algodic['inexact_type'] == 1:
             contents += f" inexact type:{algodic['inexact_type']} | gamma1:{algodic['gamma1']}\n"
@@ -62,17 +64,29 @@ def print_algorithm(algodic, outID=None):
         else:
             contents += f" inexact type:{algodic['inexact_type']} | delta:{algodic['delta']} | schimdt_const:{algodic['schimdt_const']}\n"
         contents += f"Subsolver configuration:\n"
-        contents += f" solver:{algodic['subsolver']} | warm start:{algodic['warm_start']} | verbose:{algodic['subsolver_verbose']} | maxiter:{algodic[algodic['subsolver']]['maxiter']}\n"
+        contents += f" solver:{algodic['subsolver']} | warm start:{algodic['warm_start']} | verbose:{algodic['subsolver_verbose']} | maxiter:{algodic[algodic['subsolver']]['maxiter']}"
+        if algodic['subsolver'] == 'projectedDG':
+            contents += f"projectedGD init stepsize:{algodic['projectedGD']['stepsize']}\n"
+        else:
+            contents += '\n'
         contents += '*' * 80 + '\n'
         logfile.write(contents)
 
 
+# def print_header(outID=None):
+#     if outID is not None:
+#         filename = '{}.txt'.format(outID)
+#     else:
+#         filename = 'log.txt'
+#     column_titles = '  Iter      f    |   alpha     dim   subits     flag        gap       epsilon   theta    proj  aprox-optim   #z   #nz  |  bak   stepsize  |d_full| |\n'
+#     with open(filename, "a") as logfile:
+#         logfile.write(column_titles)
 def print_header(outID=None):
     if outID is not None:
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    column_titles = '  Iter      f    |   alpha     dim   subits   flag        gap       epsilon   theta    proj  aprox-optim   #z   #nz  |  bak   stepsize  |d_full| |\n'
+    column_titles = '  Iter      f    |   alpha     dim   subits     flag        gap       epsilon   theta    proj  aprox-optim   #z   #nz  |\n'
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
 
@@ -88,6 +102,17 @@ def print_iterates(iteration, F, outID=None):
         logfile.write(contents)
 
 
+# def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, projection, aprox_optim, nz, nnz, outID=None):
+#     """
+#         projection: number of correction two feasibility performed
+#     """
+#     if outID is not None:
+#         filename = '{}.txt'.format(outID)
+#     else:
+#         filename = 'log.txt'
+#     contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:4d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
+#     with open(filename, "a") as logfile:
+#         logfile.write(contents)
 def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, projection, aprox_optim, nz, nnz, outID=None):
     """
         projection: number of correction two feasibility performed
@@ -96,7 +121,7 @@ def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, project
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    contents = f" {alpha:2.3e} {dim:5d}    {subits:3d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:3d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
+    contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:4d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |\n"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 
@@ -173,17 +198,19 @@ def print_subsolver_header(probdim, subsolver, inexact_type, outter_iter, outID=
     else:
         filename = 'log_subprob.txt'
     column_titles = f"------- probdim: {probdim:6d} | solver:{subsolver} | inexact:{inexact_type} | outter iters:{outter_iter:6d} -------------------\n"
-    column_titles += '  Iter   primal    dual        gap       theta | bak    stepsize \n'
+    column_titles += '  Iter   |grad|    stepsize   primal    dual        gap       theta |  bak    stepsize   |d|\n'
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
 
 
-def print_subsolver_iterates(iteration, primal, dual, gap, theta, bak, stepsize, outID=None):
+def print_subsolver_iterates(iteration, norm_grad, beta, primal, dual, gap, theta, bak, stepsize, norm_d, outID=None):
     if outID is not None:
         filename = '{}_subprob.txt'.format(outID)
     else:
         filename = 'log_subprob.txt'
-
-    contents = f" {iteration:5d} {primal:3.3e} {dual:3.3e} {gap:3.3e} {theta:3.3e} | {bak:3d}    {stepsize:3.3e}\n"
+    if beta == '-':
+        contents = f" {iteration:5d}  {norm_grad:3.3e}  -------  {primal:3.3e} {dual:3.3e} {gap:3.3e} {theta:3.3e} | {bak:3d}    {stepsize:3.3e} {norm_d:3.3e}\n"
+    else:
+        contents = f" {iteration:5d}  {norm_grad:3.3e} {beta:3.3e} {primal:3.3e} {dual:3.3e} {gap:3.3e} {theta:3.3e} | {bak:3d}    {stepsize:3.3e} {norm_d:3.3e}\n"
     with open(filename, "a") as logfile:
         logfile.write(contents)

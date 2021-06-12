@@ -2,7 +2,7 @@
 File: Solver.py
 Author: Yutong Dai (yutongdai95@gmail.com)
 File Created: 2021-03-22 16:44
-Last Modified: 2021-06-11 01:09
+Last Modified: 2021-06-12 10:32
 --------------------------------------------
 Description:
 '''
@@ -26,6 +26,17 @@ class Solver:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
             alpha = self.set_init_alpha(x)
+        if self.params['scale_alpha']:
+            alpha = (1 - self.params['eta']) * alpha
+            if self.params['inexact_type'] == 1:
+                self.params['gamma1'] = 0.5
+        else:
+            if self.params['inexact_type'] == 1:
+                # self.params['gamma1'] = 1 / (2 - 3 * self.params['eta'])
+                self.params['gamma1'] = 1 / (1 - 2 * self.params['eta'])
+                alpha *= 3 / 2
+            if self.params['inexact_type'] == 2:
+                alpha = (1 - self.params['eta']) * alpha
 
         # print algorithm params
         outID = self.prob.f.datasetName
@@ -114,8 +125,8 @@ class Solver:
             xtrial = xaprox
             fval_xtrial = self.prob.funcf(xtrial)
             temp = time.time()
-            if self.printlevel > 0:
-                printUtils.print_linesearch(self.d_norm, 0, 1.0, outID)
+            # if self.printlevel > 0:
+            #     printUtils.print_linesearch(self.d_norm, 0, 1.0, outID)
             print_cost = time.time() - temp
             # update proximal gradient stepsize
             if self.update_alpha_strategy == 'frac':
@@ -138,9 +149,12 @@ class Solver:
             x = xtrial
             fvalx = fval_xtrial
             gradfx = self.prob.gradf(x)
+            fevals += 1
             gevals += 1
             # boost numerical performance if beta > 1
             alpha *= self.beta
+            # if iteration % 100 == 0:
+            #     alpha *= 0.5
 
         info = {
             'X': x, 'iteration': iteration, 'time': time_so_far, 'f': fvalx,
