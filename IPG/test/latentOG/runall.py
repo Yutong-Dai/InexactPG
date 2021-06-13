@@ -24,7 +24,7 @@ parser.add_argument('--lam_shrink', default=0.8, type=float, help='lambda shrink
 parser.add_argument('--group_size', default=10, type=int, help='number of variables per group')
 parser.add_argument('--overlap_ratio', default=0.1, type=float, help='overlap ratio for each groups')
 parser.add_argument('--tol', default=1e-5, type=float, help='desired accuracy')
-parser.add_argument('--max_time', default=1800, type=int, help='max time in seconds')
+parser.add_argument('--max_time', default=3600, type=int, help='max time in seconds')
 parser.add_argument('--inexact_type', default=1, type=int, help='1/2/3')
 parser.add_argument('--subsolver', default='projectedGD', type=str, help='desired accuracy')
 parser.add_argument('--warm_start', default=True, type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help='warm start for subsolver')

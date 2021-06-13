@@ -40,7 +40,7 @@ if __name__ == '__main__':
     inexact_type = 1
     for loss in ['logit']:
         for lam_shrink in [0.8]:
-            for group_size in [10]:
+            for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:
                         for warm_start in [True]:
@@ -62,12 +62,12 @@ if __name__ == '__main__':
     inexact_type = 2
     for loss in ['logit']:
         for lam_shrink in [0.8]:
-            for group_size in [10]:
+            for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:
                         for warm_start in [True]:
                             for gamma2 in [1e-12]:
-                                for nu in [0.5]:
+                                for nu in [0.1, 0.5, 0.9]:
                                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{subsolver}_{warm_start}_{gamma2}_{nu}',
                                            outdir,
                                            scriptdir,
@@ -86,12 +86,12 @@ if __name__ == '__main__':
     inexact_type = 3
     for loss in ['logit']:
         for lam_shrink in [0.8]:
-            for group_size in [10]:
+            for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:
                         for warm_start in [True]:
                             for delta in [3]:
-                                for schimdt_const in [1.0]:
+                                for schimdt_const in [1e-1, 1e0,  1e3, 1e5]:
                                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{subsolver}_{warm_start}_{delta}_{schimdt_const}',
                                            outdir,
                                            scriptdir,

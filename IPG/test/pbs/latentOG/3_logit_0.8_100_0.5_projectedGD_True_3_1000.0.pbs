@@ -1,0 +1,10 @@
+#PBS -N 3_logit_0.8_100_0.5_projectedGD_True_3_1000.0
+#PBS -e /home/yud319/InexactPG/IPG/test/log/cache/3_logit_0.8_100_0.5_projectedGD_True_3_1000.0.err
+#PBS -o /home/yud319/InexactPG/IPG/test/log/cache/3_logit_0.8_100_0.5_projectedGD_True_3_1000.0.out
+#PBS -l nodes=1:ppn=4
+#PBS -l mem=4gb,vmem=4gb
+#PBS -q long
+cd /home/yud319/InexactPG/IPG/test/latentOG
+/home/yud319/anaconda3/bin/python runall.py --date 06_12_2021 --loss logit --group_size 100 --overlap_ratio 0.5 --inexact_type 3 --subsolver projectedGD --warm_start True --delta 3 --schimdt_const 1000.0
+echo "3_logit_0.8_100_0.5_projectedGD_True_3_1000.0.pbs" >> /home/yud319/InexactPG/IPG/test/pbs/latentOG/finished.txt
+
