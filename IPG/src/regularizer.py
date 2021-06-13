@@ -8,10 +8,10 @@ Description:
 '''
 import numpy as np
 from numba import jit
-import cvxpy as cp
+# import cvxpy as cp
 
 
-class OGL1:
+class LatentOG:
     def __init__(self, Lambda, dim, starts, ends):
         """
         Lambda: scalar > 0
@@ -42,19 +42,19 @@ class OGL1:
         self.ends = np.array(ends) + 1
 
     def __str__(self):
-        return("Overlapping Group L1")
+        return("Latent Overlapping Group L1")
 
-    def func_exact(self, X):
-        w = self.Lambda_group
-        y = cp.Variable(self.p)
-        soc_constraints = []
-        for i in range(len(self.starts)):
-            # note here self.ends is shifted by 1
-            soc_constraints.append(cp.norm(y[self.starts[i]:self.ends[i]], 2) <= w[i])
-        prob = cp.Problem(cp.Maximize(X.T @ y), soc_constraints)
-        # prob.solve(solver=cp.CPLEX)
-        prob.solve(solver=cp.MOSEK)
-        return prob.value
+    # def func_exact(self, X):
+    #     w = self.Lambda_group
+    #     y = cp.Variable(self.p)
+    #     soc_constraints = []
+    #     for i in range(len(self.starts)):
+    #         # note here self.ends is shifted by 1
+    #         soc_constraints.append(cp.norm(y[self.starts[i]:self.ends[i]], 2) <= w[i])
+    #     prob = cp.Problem(cp.Maximize(X.T @ y), soc_constraints)
+    #     # prob.solve(solver=cp.CPLEX)
+    #     prob.solve(solver=cp.MOSEK)
+    #     return prob.value
 
     def func_ub(self, X):
         return _fub1_jit(X, self.K, self.starts, self.ends, self.Lambda_group, self.freq)

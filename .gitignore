@@ -1,9 +1,8 @@
-IPG/archive/test/log/04_06_2021/*
-IPG/archive/test/log/04_18_2021/*
-IPG/archive/test/log/05_03_2021/*
-IPG/archive/test/log/04_23_2021/*
+IPG/archive/test/*
+IPG/archive/nonoverlap-GroupL1Test/test/log
 IPG/archive/test/log/cache/*
 IPG/archive/src/naiveProj/__pycache__/*
 IPG/archive/src/schimdt/__pycache__/*
 IPG/archive/src/schimdtProj/__pycache__/*
 IPG/archive/src/negT/__pycache__/*
+IPG/test/log/*

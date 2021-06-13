@@ -10,7 +10,7 @@ from numpy import inf
 params = {}
 # termination
 params['tol'] = 1e-6
-params['max_iter'] = 10000
+params['max_iter'] = 20000
 params['max_time'] = 3600
 params['max_back'] = 100
 # print
