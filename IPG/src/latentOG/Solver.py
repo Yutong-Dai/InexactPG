@@ -82,6 +82,8 @@ class Solver:
             xaprox, lambda_full, flag, subit, gap, epsilon, theta, correction = self.prob.ipg(x, gradfx, alpha, self.params,
                                                                                               outter_iter=iteration + 1,
                                                                                               lambda_init=lambda_init, outID=outID)
+            if gap >= 1e10:
+                self.status = -2
             subits += subit
             nz = np.sum(xaprox == 0)
             nnz = self.prob.p - nz

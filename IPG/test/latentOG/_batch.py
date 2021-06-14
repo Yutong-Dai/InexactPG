@@ -57,7 +57,7 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
             L = utils.estimate_lipschitz(X, loss)
             savemat(Lip_path, {"L": L})
             print(f"save Lipschitz constant to: {Lip_path}")
-        r = LatentOG(Lambda=lammax * 0.8, dim=p, starts=starts, ends=ends)
+        r = LatentOG(Lambda=lammax * lambda_shrinkage, dim=p, starts=starts, ends=ends)
         prob = ProbLatentOG(f, r)
         solver = Solver(prob, params)
         info = solver.solve(alpha=1 / L, explore=True)
