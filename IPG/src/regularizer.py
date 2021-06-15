@@ -10,6 +10,64 @@ import numpy as np
 from numba import jit
 # import cvxpy as cp
 
+class natOG:
+    def __init__(self, Lambda, dim, starts, ends):
+        """
+        Lambda: scalar > 0
+        starts: a list of numbers speficy the starting index of each group
+          ends: a list of numbers speficy the end index of each group
+
+        For example, a overlapping group configuration, the number stands for
+        the index of the variable.
+        {g0=[0,1,2,3,4],g1=[3,4,5,6,7], g2=[5,6,7,8,9]}
+        stars = [0, 3, 5]
+        ends  = [4, 7, 9]
+        """
+        self.p = dim
+        self.Lambda = Lambda
+        self.K = len(starts)
+        # a np.array that stores the number of group that each coordinate belongs to
+        # self.freq = np.zeros((self.p, 1))
+        self.group_size = np.zeros(self.K)
+        self.groups = {}
+        for i in range(self.K):
+            # self.freq[starts[i]:ends[i] + 1] += 1
+            self.group_size[i] = ends[i] - starts[i] + 1
+            self.groups[i] = np.arange(starts[i], ends[i] + 1)
+        self.Lambda_group = Lambda * np.sqrt(self.group_size)
+        self.starts = np.array(starts)
+        # since python `start:end` will include `start` and exclude `end`,
+        # we add 1 to the `end` so the G_i-th block of X is indexed by X[start:end]
+        self.ends = np.array(ends) + 1
+
+    def __str__(self):
+        return("Natural Overlapping Group L1")
+
+    def func(self, X):
+        return _natf(X, self.starts, self.ends, self.Lambda_group)
+
+    def createYStartsEnds(self):
+        self.Ystarts = [0] * self.K
+        self.Yends = [0] * self.K
+        start = 0
+        for i in range(self.K):
+            end = start + self.group_size[i] - 1
+            self.Ystarts[i] = start
+            self.Yends[i] = end + 1
+            start = end + 1
+
+
+
+        
+
+@jit(nopython=True)
+def _natf(X, K, starts, ends, Lambda_group):
+    fval = 0.0
+    for i in range(K):
+        start, end = starts[i], ends[i]
+        XG_i = X[start:end]
+        fval += Lambda_group[i] * np.sqrt(np.dot(XG_i.T, XG_i))[0][0]
+    return fval
 
 class LatentOG:
     def __init__(self, Lambda, dim, starts, ends):
