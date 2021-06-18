@@ -28,7 +28,7 @@ class natOG:
         self.K = len(starts)
         # a np.array that stores the number of group that each coordinate belongs to
         # self.freq = np.zeros((self.p, 1))
-        self.group_size = np.zeros(self.K)
+        self.group_size = np.zeros(self.K, dtype=np.int64)
         self.groups = {}
         for i in range(self.K):
             # self.freq[starts[i]:ends[i] + 1] += 1
@@ -44,7 +44,7 @@ class natOG:
         return("Natural Overlapping Group L1")
 
     def func(self, X):
-        return _natf(X, self.starts, self.ends, self.Lambda_group)
+        return _natf(X, self.K, self.starts, self.ends, self.Lambda_group)
 
     def createYStartsEnds(self):
         self.Ystarts = [0] * self.K

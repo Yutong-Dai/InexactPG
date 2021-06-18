@@ -16,16 +16,16 @@ fprintf('\n If you cannot solve the problem, please contact with Jun Liu (j.liu@
 
 
 % files in the folder q1
-cd([current_path '/SLEP/CFiles/q1']);
-mex epp.c;
-mex ep1R.c;
-mex ep21d.c;
-mex ep21R.c;
-mex eplb.c;
-mex eppMatrix.c;
-mex eppVector.c;
-mex eppVectorR.c;
-mex epsgLasso.c;
+% cd([current_path '/SLEP/CFiles/q1']);
+% mex epp.c;
+% mex ep1R.c;
+% mex ep21d.c;
+% mex ep21R.c;
+% mex eplb.c;
+% mex eppMatrix.c;
+% mex eppVector.c;
+% mex eppVectorR.c;
+% mex epsgLasso.c;
 
 % file in the folder flsa
 cd([current_path '/SLEP/CFiles/overlapping']);

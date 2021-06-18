@@ -153,12 +153,28 @@ class ProbNatOG(Problem):
         nonZeroGroupFlag, entrySignFlag, uk = _identifyZeroGroups(uk, alphak, 
                                             self.Lambda_group, 
                                             self.starts, self.ends, self.K)
+        print('nonZeroGroupFlag:')
+        for i in range(len(nonZeroGroupFlag)):
+            print(f" {nonZeroGroupFlag[i]}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
+        print('\nentrySignFlag:')
+        for i in range(len(entrySignFlag)):
+            print(f" {entrySignFlag[i][0]}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
+        print('work on u:')
+        for i in range(len(uk)):
+            print(f" {uk[i][0]:3.3e}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
         # Initialize dual variable Y
         if not Y_init:
             Y = np.zeros((self.r.Yends[-1], 1))
         self.dualDim = 0
         # process Y to make sure its feasibility
         # also Y_{ij} = 0 if x_{i}= 0
+        print("===========work on initial Y============")
         for i in range(self.K):
             Ystart, Yend = self.r.Ystarts[i], self.r.Yends[i]
             if nonZeroGroupFlag[i]:
@@ -173,10 +189,21 @@ class ProbNatOG(Problem):
                     Y[Ystart:Yend] = (radiusg / norm_Yg) * Yg
             else:
                 Y[Ystart:Yend] = 0.0
+        print(' Initial Y is:')
+        for i in range(len(Y)):
+            print(f" {Y[i][0]:3.3e}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
         # ----------------- perform the projected gradient descent -------------
         x = self._xFromY(Y, uk, nonZeroGroupFlag)
+        print('\n corresponding x is:')
+        for i in range(len(x)):
+            print(f" {x[i][0]:3.3e}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
         fdualY, part2 = self._dual(Y, x, uk, nonZeroGroupFlag)
         iters = 0
+        print("Enter the loop for PGD:")
         while True:
             # ----------------------- check termination -------------------------------------
             if iters == params['projectedGD']['maxiter']:
@@ -190,40 +217,86 @@ class ProbNatOG(Problem):
             #     flag = 'desired '
             #     break
             # ----------------------- one iteration of PGD -------------------------
+            print("=========================================\n")
+            print(f"iters:{iters} | PGD stepsize:{params['projectedGD']['stepsize']}")
+            print("Current Y is:")
+            for i in range(len(Y)):
+                print(f" {Y[i][0]:3.3e}", end="")
+                if (i + 1) % 5 == 0:
+                    print("")
+            print('\n corresponding x is:')
+            for i in range(len(x)):
+                print(f" {x[i][0]:3.3e}", end="")
+                if (i + 1) % 5 == 0:
+                    print("")
+            # print("\n gradY is:")
+            # for i in range(len(gradY)):
+            #     print(f" {gradY[i][0]:3.3e}", end="")
+            #     if (i + 1) % 5 == 0:
+            #         print("")
             #  ------------------------ backtrack line-search ------------------
             bak = 0
             while True:
-            
+                # print("\n perform projection on:")
+                # Ytrial = self._proj(Y - params['projectedGD']['stepsize'] * gradY, alphak, nonZeroGroupFlag)
                 Ytrial, gradY = self._proj(Y, x, params['projectedGD']['stepsize'], alphak, nonZeroGroupFlag)
-
+                print("\n Ynew is:")
+                for i in range(len(Ytrial)):
+                    print(f" {Ytrial[i][0]:3.3e}", end="")
+                    if (i + 1) % 5 == 0:
+                        print("")
                 xtrial = self._xFromY(Ytrial, uk, nonZeroGroupFlag)
-
+                print("\n xnew is:")
+                for i in range(len(xtrial)):
+                    print(f" {xtrial[i][0]:3.3e}", end="")
+                    if (i + 1) % 5 == 0:
+                        print("")
+                # print("\n gradYnew is:")
+                # for i in range(len(gradYtrial)):
+                #     print(f" {gradYtrial[i][0]:3.3e}", end="")
+                #     if (i + 1) % 5 == 0:
+                #         print("")
                 fdualYtrial, part2 = self._dual(Ytrial, xtrial, uk, nonZeroGroupFlag)
                 lhs =  fdualYtrial - fdualY - np.sum(gradY * (Ytrial - Y))
                 rhs = (1 / (2 * params['projectedGD']['stepsize'])) * utils.l2_norm(Ytrial - Y)**2
-                
+                print(f"\n Test sufficient decrease: lhs:{lhs:3.3e} | rhs: {rhs:3.3e}");
                 if lhs <= rhs:
-                    
+                    print("sufficient decrease")
                     flag = 'desired'
                     ratio= rhs / lhs;
                     if ratio > 5:
                         params['projectedGD']['stepsize'] *= 1.25
+                        print("Increase stepsize")
+                    print(" ==line search break! ===")
                     break
                 else:
+                    print(" no sufficient decrease")
                     ratio= lhs / (rhs*params['projectedGD']['stepsize'])
                     if (2/params['projectedGD']['stepsize'] <= ratio):
                         params['projectedGD']['stepsize'] = 1 / ratio
+                        print(f" L is set to: {ratio:3.3e}")
                     else:
                         params['projectedGD']['stepsize'] *= 0.5
+                        print(f" L is set to: 2L={1/params['projectedGD']['stepsize']:3.3e}")
                     if 1/(params['projectedGD']['stepsize'] * self.K) != 2* self.K:
+                        print(" terminate without meet suffcient decreases")
                         if rhs * params['projectedGD']['stepsize'] < 1e-16:
                             flag = 'weird'
                             break
                         else:
+                            print(" ====End of BAK ERROR====");
                             flag = 'weird'
                             break
+            
+                # if np.abs(lhs) <= 1e-18 and np.abs(rhs) <= 1e-18:
+                #     break
+                # if bak > 100:
+                #     flag = 'lnscfail'
+                #     warnings.warn("Linesearch failed in projected GD")
+                #     break
                 bak += 1
             norm_d = utils.l2_norm(Ytrial - Y)
+            print(f"bak:{bak} | stepsize for next iter:{params['projectedGD']['stepsize']} | norm_d:{norm_d}")
             # ----------------------- check termination -------------------------------------
             if iters == params['projectedGD']['maxiter']:
                 flag = 'maxiters'
@@ -231,6 +304,7 @@ class ProbNatOG(Problem):
                 break
             # check duality gap
             gap = self.r.func(xtrial) * alphak - part2
+            print(f"gap:{gap}")
             if gap <= 1e-10:
                 flag = 'desired '
                 break
@@ -239,6 +313,7 @@ class ProbNatOG(Problem):
             fdualY = fdualYtrial
             # gradY = gradYtrial
             iters += 1
+            print(" ====End of one iteration ====")
         # correct the sign for x
         negx = (entrySignFlag == -1)
         x[negx] = -x[negx]

@@ -151,7 +151,7 @@ class ProbLatentOG(Problem):
                 if np.abs(fdiff) <= 1e-18 and np.abs(rhs) <= 1e-18:
                     isContinue = False
                 else:
-                    isContinue = fdiff < rhs
+                    isContinue = fdiff <= rhs
                 if bak > 100:
                     # line search failed
                     flag = 'lnscfail'

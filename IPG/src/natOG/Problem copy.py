@@ -81,55 +81,65 @@ class ProbNatOG(Problem):
     
 
     
+    # def _xFromY(self, Y, uk, nonZeroGroupFlag):
+    #     """
+    #         x = max( u - Y * e, 0)
+    #         y = u - Y * e - x
+    #     """
+    #     x = uk + 0.0
+    #     for i in range(self.K):
+    #         if nonZeroGroupFlag[i]:
+    #             start, end = self.starts[i], self.ends[i]
+    #             Ystart, Yend = self.r.Ystarts[i], self.r.Yends[i]
+    #             x[start:end] -= Y[Ystart:Yend]
+    #     # distance to the boundary
+    #     y = x + 0.0
+    #     y[x >= 0] = 0
+    #     x[x < 0] = 0
+    #     return x,y
     def _xFromY(self, Y, uk, nonZeroGroupFlag):
         """
             x = max( u - Y * e, 0)
             gradY
         """
         x = uk + 0.0
+        gradY = np.zeros_like(Y)
         for i in range(self.K):
             if nonZeroGroupFlag[i]:
                 start, end = self.starts[i], self.ends[i]
                 Ystart, Yend = self.r.Ystarts[i], self.r.Yends[i]
                 x[start:end] -= Y[Ystart:Yend]
+                gradY[Ystart:Yend] = -x[start:end]
         x[x < 0] = 0.0
-        return x
-    def _proj(self, Y, x, stepsize, alphak, nonZeroGroupFlag):
+        return x, gradY
+
+    def _proj(self, Y, alphak, nonZeroGroupFlag):
         """
             perform projection of Y such that
             ||Yg|| <= alphak * wg
         """
-        Ynew = Y + 0.0
-        gradY = np.zeros_like(Y)
         for i in range(self.K):
             if nonZeroGroupFlag[i]:
-                # print(f"Group {i}")
                 Ystart, Yend = self.r.Ystarts[i], self.r.Yends[i]
-                xstart, xend = self.starts[i], self.ends[i]
-                xg = x[xstart:xend]
-                gradY[Ystart:Yend] = - xg
-                Yg = Y[Ystart:Yend] +  xg* stepsize
-                # for j in range(len(Yg)):
-                #     print(f" {Y[Ystart:Yend][j][0]:3.3e} | {(x[xstart:xend][j] * stepsize)[0]:3.3e} | {Yg[j][0]:3.3e} | Y-stepsize*Ygrad:{(Y[Ystart:Yend][j]-stepsize*gradY[Ystart:Yend][j])[0]:3.3e} | {x[xstart:xend][j][0]:3.3e} | -Ygrad:{-gradY[Ystart:Yend][j][0]:3.3e}|")
+                Yg = Y[Ystart:Yend]
                 norm_Yg = utils.l2_norm(Yg)
                 radiusg = alphak * self.Lambda_group[i]
                 if norm_Yg > radiusg:
-                    Ynew[Ystart:Yend] = (radiusg / norm_Yg) * Yg
-        return Ynew, gradY
+                    Y[Ystart:Yend] = (radiusg / norm_Yg) * Yg
+        return Y
 
-    def _dual(self, Y, x, uk, zeroGroupFlag):
+    def _dual(self, Y, x, uk):
         """
             w(x, Y) = - (1/2 ||Y-uk||^2 + x^TYe)
         """
         part1 =  utils.l2_norm(x-uk) ** 2 / 2
         part2 = 0.0
         for i in range(self.K):
-            if zeroGroupFlag[i]:
-                Ystart, Yend = self.r.Ystarts[i], self.r.Yends[i]
-                Yg = Y[Ystart:Yend]
-                start, end = self.starts[i], self.ends[i]
-                xg = x[start:end]
-                part2 += np.sum(Yg * xg)
+            Ystart, Yend = self.r.Ystarts[i], self.r.Yends[i]
+            Yg = Y[Ystart:Yend]
+            start, end = self.starts[i], self.ends[i]
+            xg = x[start:end]
+            part2 += np.sum(Yg * xg)
         dual = -(part1+part2)
         return dual, part2
 
@@ -143,7 +153,7 @@ class ProbNatOG(Problem):
                 params['inexact_type'] 1: ck||s_k||^2
                 params['inexact_type'] 2: gamma_2
                 params['inexact_type'] 3: O(1/k^3)
-        reference: https://people.eecs.berkeley.edu/~elghaoui/Teaching/EE227A/lecture18.pdf
+        reference: https://sites.math.washington.edu/~burke/crs/408/notes/nlp/gpa.pdf
         The dual variable Y, which is a sparse p-by-K matrix. In stead of storing the whole
         Matrix, we operate on its compressed form.
 
@@ -153,12 +163,28 @@ class ProbNatOG(Problem):
         nonZeroGroupFlag, entrySignFlag, uk = _identifyZeroGroups(uk, alphak, 
                                             self.Lambda_group, 
                                             self.starts, self.ends, self.K)
+        print('nonZeroGroupFlag:')
+        for i in range(len(nonZeroGroupFlag)):
+            print(f" {nonZeroGroupFlag[i]}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
+        print('\nentrySignFlag:')
+        for i in range(len(entrySignFlag)):
+            print(f" {entrySignFlag[i][0]}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
+        print('work on u:')
+        for i in range(len(uk)):
+            print(f" {uk[i][0]:3.3e}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
         # Initialize dual variable Y
         if not Y_init:
             Y = np.zeros((self.r.Yends[-1], 1))
         self.dualDim = 0
         # process Y to make sure its feasibility
         # also Y_{ij} = 0 if x_{i}= 0
+        print("===========work on initial Y============")
         for i in range(self.K):
             Ystart, Yend = self.r.Ystarts[i], self.r.Yends[i]
             if nonZeroGroupFlag[i]:
@@ -173,16 +199,27 @@ class ProbNatOG(Problem):
                     Y[Ystart:Yend] = (radiusg / norm_Yg) * Yg
             else:
                 Y[Ystart:Yend] = 0.0
+        print(' Initial Y is:')
+        for i in range(len(Y)):
+            print(f" {Y[i][0]:3.3e}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
         # ----------------- perform the projected gradient descent -------------
-        x = self._xFromY(Y, uk, nonZeroGroupFlag)
-        fdualY, part2 = self._dual(Y, x, uk, nonZeroGroupFlag)
+        x, gradY = self._xFromY(Y, uk, nonZeroGroupFlag)
+        print('\n corresponding x is:')
+        for i in range(len(x)):
+            print(f" {x[i][0]:3.3e}", end="")
+            if (i + 1) % 5 == 0:
+                print("")
+        fdualY, part2 = self._dual(Y, x, uk)
         iters = 0
+        print("Enter the loop for PGD:")
         while True:
-            # ----------------------- check termination -------------------------------------
-            if iters == params['projectedGD']['maxiter']:
-                flag = 'maxiters'
-                warnings.warn("inexactness conditon is definitely not satisfied due to the maxiter limit.")
-                break
+            # # ----------------------- check termination -------------------------------------
+            # if iters == params['projectedGD']['maxiter']:
+            #     flag = 'maxiters'
+            #     warnings.warn("inexactness conditon is definitely not satisfied due to the maxiter limit.")
+            #     break
             # # check duality gap
             # gap = self.r.func(x) * alphak - part2
             # print(f"gap:{gap}")
@@ -190,54 +227,51 @@ class ProbNatOG(Problem):
             #     flag = 'desired '
             #     break
             # ----------------------- one iteration of PGD -------------------------
+            print(f"iters:{iters} | PGD stepsize:{params['projectedGD']['stepsize']}")
+            Ytrial = self._proj(Y - params['projectedGD']['stepsize'] * gradY, alphak, nonZeroGroupFlag)
+            # for i in range(len(Ytrial)):
+            #     print(f'Ytrial[{i}]:{Ytrial[i][0]:2.3e}')
+            d = Ytrial - Y
+            dirder = np.sum(d * gradY)
             #  ------------------------ backtrack line-search ------------------
+            stepsize = 1.0
             bak = 0
+            print(Y.T)
             while True:
-            
-                Ytrial, gradY = self._proj(Y, x, params['projectedGD']['stepsize'], alphak, nonZeroGroupFlag)
-
-                xtrial = self._xFromY(Ytrial, uk, nonZeroGroupFlag)
-
-                fdualYtrial, part2 = self._dual(Ytrial, xtrial, uk, nonZeroGroupFlag)
-                lhs =  fdualYtrial - fdualY - np.sum(gradY * (Ytrial - Y))
-                rhs = (1 / (2 * params['projectedGD']['stepsize'])) * utils.l2_norm(Ytrial - Y)**2
-                
+                Ytrial = Y + stepsize * d
+                xtrial, _ = self._xFromY(Ytrial, uk, nonZeroGroupFlag)
+                # for i in range(len(xtrial)):
+                #     print(f'xtrial[{i}]:{xtrial[i][0]:2.3e}')
+                fdualYtrial, part2 = self._dual(Ytrial, xtrial, uk)
+                lhs =  fdualYtrial - fdualY
+                rhs = params['eta'] * stepsize * dirder
+                # print(f"lhs: {lhs[0]:3.3e} | rhs: {rhs:3.3e}")
                 if lhs <= rhs:
-                    
-                    flag = 'desired'
-                    ratio= rhs / lhs;
-                    if ratio > 5:
-                        params['projectedGD']['stepsize'] *= 1.25
                     break
-                else:
-                    ratio= lhs / (rhs*params['projectedGD']['stepsize'])
-                    if (2/params['projectedGD']['stepsize'] <= ratio):
-                        params['projectedGD']['stepsize'] = 1 / ratio
-                    else:
-                        params['projectedGD']['stepsize'] *= 0.5
-                    if 1/(params['projectedGD']['stepsize'] * self.K) != 2* self.K:
-                        if rhs * params['projectedGD']['stepsize'] < 1e-16:
-                            flag = 'weird'
-                            break
-                        else:
-                            flag = 'weird'
-                            break
+                if np.abs(lhs) <= 1e-18 and np.abs(rhs) <= 1e-18:
+                    break
+                if bak > 100:
+                    flag = 'lnscfail'
+                    warnings.warn("Linesearch failed in projected GD")
+                    break
                 bak += 1
-            norm_d = utils.l2_norm(Ytrial - Y)
+                stepsize *= params['xi']
+            norm_d = utils.l2_norm(d) * stepsize
+            print(f"bak:{bak} | stepsize:{stepsize} | norm_d:{norm_d}")
             # ----------------------- check termination -------------------------------------
             if iters == params['projectedGD']['maxiter']:
                 flag = 'maxiters'
                 warnings.warn("inexactness conditon is definitely not satisfied due to the maxiter limit.")
                 break
             # check duality gap
-            gap = self.r.func(xtrial) * alphak - part2
+            gap = self.r.func(x) * alphak - part2
+            print(f"gap:{gap}")
             if gap <= 1e-10:
                 flag = 'desired '
                 break
-            Y = Ytrial 
-            x = xtrial 
-            fdualY = fdualYtrial
-            # gradY = gradYtrial
+            Y = Ytrial + 0.0
+            x = xtrial + 0.0
+            print("======")
             iters += 1
         # correct the sign for x
         negx = (entrySignFlag == -1)
