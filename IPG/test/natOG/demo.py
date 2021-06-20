@@ -20,7 +20,7 @@ from src.natOG.Solver import Solver
 
 
 loss = 'logit'
-datasetName = 'colon_cancer'
+datasetName = 'leu'
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
 X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
