@@ -20,6 +20,46 @@ from src.latentOG.Problem import ProbLatentOG
 from src.latentOG.Solver import Solver
 
 
+# loss = 'logit'
+# datasetName = 'duke'
+# fileType = fileTypeDict[datasetName]
+# print("Working on: {}...".format(datasetName))
+# X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
+# if loss == 'logit':
+#     f = LogisticLoss(X, y, datasetName)
+# else:
+#     f = LeastSquares(X, y, datasetName)
+# p = X.shape[1]
+# # num_grp = min(100, math.ceil(p * 0.3))
+# # grp_size = int(int(p / num_grp) * 1.5)
+# grp_size = min(p // 2, 10)
+# overlap_ratio = 0.1
+# Lip_path = f'../../../db/Lip-{datasetName}.mat'
+# if os.path.exists(Lip_path):
+#     L = loadmat(Lip_path)["L"][0][0]
+#     print(f"loading Lipschitz constant from: {Lip_path}")
+# else:
+#     L = utils.estimate_lipschitz(X, loss)
+#     savemat(Lip_path, {"L": L})
+#     print(f"save Lipschitz constant to: {Lip_path}")
+
+# # generator = utils.GenOverlapGroup(p, num_grp, grp_size)
+# generator = utils.GenOverlapGroup(p, grp_size=grp_size, overlap_ratio=overlap_ratio)
+# starts, ends = generator.get_group()
+# lammax = utils.lam_max(X, y, starts, ends, loss)
+# # r = LatentOG(Lambda=0.1, dim=p, starts=starts, ends=ends)
+# r = LatentOG(Lambda=lammax * 0.8, dim=p, starts=starts, ends=ends)
+# prob = ProbLatentOG(f, r)
+# params['tol'] = 1e-5
+# params['inexact_type'] = 1
+# params['warm_start'] = True
+# params['subsolver'] = 'projectedGD'
+# params['projectedGD']['stepsize'] = 1.0
+# solver = Solver(prob, params)
+# info = solver.solve(alpha=1 / L, explore=True)
+# print(f"time:{info['time']:3.3e} | iters:{info['iteration']} | subiters:{info['subits']} | nnz:{info['nnz']} | nz:{info['nz']}")
+
+
 loss = 'logit'
 datasetName = 'madelon'
 fileType = fileTypeDict[datasetName]

@@ -85,6 +85,7 @@ class Solver:
         const = -self.eta * (self.d_norm_sq / alpha - np.sqrt(2 * self.epsilon / alpha) * self.d_norm - self.epsilon)
         # print(1 / alpha - np.sqrt(2 * self.prob.ck / alpha) - self.prob.ck)
         # print(f"LHS:{self.t/(2*alpha)*self.prox_optim**2: 3.6e} | RHS:{self.d_norm_sq / alpha - np.sqrt(2 * self.epsilon / alpha) * self.d_norm - self.epsilon}")
+        self.bak = 0
         self.stepsize = 1
         while True:
             # print(f"LHS:{fval_xtrial - fvalx + rval_xtrial - rvalx:3.3e} | RHS:{self.stepsize * const:3.3e} | stepsize:{self.stepsize:3.3e} | const:{const:3.3e}")

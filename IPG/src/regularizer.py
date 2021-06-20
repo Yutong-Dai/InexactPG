@@ -33,7 +33,7 @@ class natOG:
         for i in range(self.K):
             # self.freq[starts[i]:ends[i] + 1] += 1
             self.group_size[i] = ends[i] - starts[i] + 1
-            self.groups[i] = np.arange(starts[i], ends[i] + 1)
+            # self.groups[i] = np.arange(starts[i], ends[i] + 1)
         self.Lambda_group = Lambda * np.sqrt(self.group_size)
         self.starts = np.array(starts)
         # since python `start:end` will include `start` and exclude `end`,
@@ -55,12 +55,14 @@ class natOG:
             self.Ystarts[i] = start
             self.Yends[i] = end + 1
             start = end + 1
+        self.Ystarts = np.array(self.Ystarts)
+        self.Yends = np.array(self.Yends)
 
 
 
         
 
-@jit(nopython=True)
+@jit(nopython=True, cache=True)
 def _natf(X, K, starts, ends, Lambda_group):
     fval = 0.0
     for i in range(K):
@@ -129,7 +131,7 @@ class LatentOG:
         return _dual_jit(y, self.K, self.starts, self.ends, self.Lambda_group)
 
 
-@jit(nopython=True)
+@jit(nopython=True, cache=True)
 def _fub1_jit(X, K, starts, ends, Lambda_group, freq):
     ub = 0.0
     for i in range(K):
@@ -152,7 +154,7 @@ def _fub1_jit(X, K, starts, ends, Lambda_group, freq):
 #     return ub
 
 
-@jit(nopython=True)
+@jit(nopython=True, cache=True)
 def _flb_jit(X, Lambda_group):
     y = X / np.sqrt(np.sum(X * X))
     y = min(Lambda_group) * y
@@ -160,7 +162,7 @@ def _flb_jit(X, Lambda_group):
     return lb
 
 
-@jit(nopython=True)
+@jit(nopython=True, cache=True)
 def _dual_jit(y, K, starts, ends, Lambda_group):
     max_group_norm = 0.0
     for i in range(K):

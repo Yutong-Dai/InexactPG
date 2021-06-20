@@ -1,4 +1,4 @@
-clear, clc;
+% clear, clc;
 % current_path=cd;
 % cd([current_path '/SLEP/CFiles/overlapping']);
 % mex overlapping.c;
@@ -7,8 +7,10 @@ clear, clc;
 p=10; % number of samples
 g=3; % number of groups
 
-xk = (0:9)' .* 0.1;
-gradfxk =  xk .* 0.1;
+% xk = (0:9)' .* 0.1;
+% gradfxk =  xk .* 0.1;
+xk = [-1.1, -2.2, -3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 11.4]';
+gradfxk = [11.1, 2.2, 33.3, -44.4, -5.5, 36.6, 77.7, 8.8, 9.9, 11.4]';
 alphak = 0.2;
 uk = xk - alphak * gradfxk;
 lambda1=0;

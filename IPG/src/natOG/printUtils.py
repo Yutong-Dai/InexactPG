@@ -53,9 +53,9 @@ def print_algorithm(algodic, outID=None):
         contents += 'Termination Conditions:\n'
         contents += f" optimality measure: {algodic['optimality_measure']}| tol:{algodic['tol']} | maxiter:{algodic['max_iter']} | maxtime:{algodic['max_time']}\n"
         contents += 'Lineserch Parameters:\n'
-        contents += f" eta:{algodic['eta']} | xi:{algodic['xi']} | zeta:{algodic['zeta']}\n"
+        contents += f" eta:{algodic['eta']} | xi:{algodic['xi']} | zeta:{algodic['zeta']} \n"
         contents += 'Proximal Stepsize update:\n'
-        contents += f" update strategy:{algodic['update_alpha_strategy']} | beta:{algodic['beta']} | scale alpha for comparsion:{algodic['scale_alpha']}\n"
+        contents += f" update strategy:{algodic['update_alpha_strategy']} | scale alpha for comparsion:{algodic['scale_alpha']}\n"
         contents += f"Inexact Strategy:\n"
         if algodic['inexact_type'] == 1:
             contents += f" inexact type:{algodic['inexact_type']} | gamma1:{algodic['gamma1']}\n"
@@ -65,8 +65,8 @@ def print_algorithm(algodic, outID=None):
             contents += f" inexact type:{algodic['inexact_type']} | delta:{algodic['delta']} | schimdt_const:{algodic['schimdt_const']}\n"
         contents += f"Subsolver configuration:\n"
         contents += f" solver:{algodic['subsolver']} | warm start:{algodic['warm_start']} | verbose:{algodic['subsolver_verbose']} | maxiter:{algodic[algodic['subsolver']]['maxiter']}"
-        if algodic['subsolver'] == 'projectedDG':
-            contents += f"projectedGD init stepsize:{algodic['projectedGD']['stepsize']}\n"
+        if algodic['subsolver'] == 'projectedGD':
+            contents += f"\n projectedGD init stepsize:{algodic['projectedGD']['stepsize']}\n"
         else:
             contents += '\n'
         contents += '*' * 80 + '\n'
@@ -78,7 +78,7 @@ def print_algorithm(algodic, outID=None):
 #         filename = '{}.txt'.format(outID)
 #     else:
 #         filename = 'log.txt'
-#     column_titles = '  Iter      f    |   alpha     dim   subits     flag        gap       epsilon   theta    proj  aprox-optim   #z   #nz  |  bak   stepsize  |d_full| |\n'
+#     column_titles = '  Iter      F    |   alpha     dim   subits     flag        gap       epsilon   aprox-optim   #z   #nz  |  bak   stepsize     |d|   |\n'
 #     with open(filename, "a") as logfile:
 #         logfile.write(column_titles)
 def print_header(outID=None):
@@ -86,10 +86,9 @@ def print_header(outID=None):
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    column_titles = '  Iter      f    |   alpha     dim   subits     flag        gap       epsilon   theta    proj  aprox-optim   #z   #nz  |\n'
+    column_titles = '  Iter      F    |   alpha     dim   subits     flag        gap       epsilon   theta     aprox-optim   #z   #nz  |  bak   stepsize     |d|   |\n'
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
-
 
 def print_iterates(iteration, F, outID=None):
     if outID is not None:
@@ -102,26 +101,27 @@ def print_iterates(iteration, F, outID=None):
         logfile.write(contents)
 
 
-# def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, projection, aprox_optim, nz, nnz, outID=None):
+# def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, aprox_optim, nz, nnz, outID=None):
 #     """
-#         projection: number of correction two feasibility performed
+#         pass
 #     """
 #     if outID is not None:
 #         filename = '{}.txt'.format(outID)
 #     else:
 #         filename = 'log.txt'
-#     contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:4d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
+#     contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
 #     with open(filename, "a") as logfile:
 #         logfile.write(contents)
-def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, projection, aprox_optim, nz, nnz, outID=None):
+
+def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, aprox_optim, nz, nnz, outID=None):
     """
-        projection: number of correction two feasibility performed
+        pass
     """
     if outID is not None:
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:4d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |\n"
+    contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 
@@ -181,16 +181,27 @@ def print_result(info, outID=None):
     contents += "=" * 30 + '\n'
     contents += 'Iterations:{:.>65}{:d}\n'.format("", info['iteration'])
     contents += 'Sub iters :{:.>65}{:d}\n'.format("", info['subits'])
+    contents += 'Sub iters Equiv :{:.>60}{:f}\n'.format("", info['subits_equiv'])
     contents += 'CPU seconds:{:.>64}{:.4f}\n'.format("", info['time'])
     if info['nz'] is not None:
         contents += 'number of sparse groups:{:.>52}{:d}\n'.format("", info['nz'])
-        contents += 'Objective function(f):{:.>54}{:8.6e}\n'.format("", info['f'])
+        contents += 'Objective function:{:.>57}{:8.6e}\n'.format("", info['F'])
         contents += 'Optimality error:{:.>59}{:8.6e}\n'.format("", info['optim'])
     contents += 'Function evaluations:{:.>55}{:d}\n'.format("", info['fevals'])
     contents += 'Gradient evaluations:{:.>55}{:d}\n'.format("", info['gevals'])
     with open(filename, "a") as logfile:
         logfile.write(contents)
 
+
+# def print_subsolver_header(probdim, subsolver, inexact_type, outter_iter, outID=None):
+#     if outID is not None:
+#         filename = '{}_subprob.txt'.format(outID)
+#     else:
+#         filename = 'log_subprob.txt'
+#     column_titles = f"------- probdim: {probdim:6d} | solver:{subsolver} | inexact:{inexact_type} | outter iters:{outter_iter:6d} -------------------\n"
+#     column_titles += '  Iter   |grad|    stepsize   primal    dual        gap   |  bak    stepsize     |d|   |\n'
+#     with open(filename, "a") as logfile:
+#         logfile.write(column_titles)
 
 def print_subsolver_header(probdim, subsolver, inexact_type, outter_iter, outID=None):
     if outID is not None:
@@ -203,6 +214,17 @@ def print_subsolver_header(probdim, subsolver, inexact_type, outter_iter, outID=
         logfile.write(column_titles)
 
 
+# def print_subsolver_iterates(iteration, norm_grad, beta, primal, dual, gap, bak, stepsize, norm_d, outID=None):
+#     if outID is not None:
+#         filename = '{}_subprob.txt'.format(outID)
+#     else:
+#         filename = 'log_subprob.txt'
+#     if beta == '-':
+#         contents = f" {iteration:5d}  {norm_grad:3.3e}  -------  {primal:3.3e} {dual:3.3e} {gap:3.3e} | {bak:3d}    {stepsize:3.3e} {norm_d:3.3e} |\n"
+#     else:
+#         contents = f" {iteration:5d}  {norm_grad:3.3e} {beta:3.3e} {primal:3.3e} {dual:3.3e} {gap:3.3e} | {bak:3d}    {stepsize:3.3e} {norm_d:3.3e} |\n"
+#     with open(filename, "a") as logfile:
+#         logfile.write(contents)
 def print_subsolver_iterates(iteration, norm_grad, beta, primal, dual, gap, theta, bak, stepsize, norm_d, outID=None):
     if outID is not None:
         filename = '{}_subprob.txt'.format(outID)

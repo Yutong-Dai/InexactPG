@@ -24,21 +24,21 @@ class Solver:
         self.__dict__.update(params)
         self.version = "0.1.1 (2021-04-05)"
 
-    def set_init_alpha(self, x):
-        s = 1e-2
-        _ = self.prob.funcf(x)
-        gradfx = self.prob.gradf(x)
-        y = x - s * gradfx
-        while True:
-            if utils.l2_norm(y - x) > 1e-8:
-                _ = self.prob.funcf(y)
-                gradfy = self.prob.gradf(y)
-                alpha = utils.l2_norm(x - y) / (1 * utils.l2_norm(gradfx - gradfy))
-                break
-            else:
-                s *= 10
-                y = x - s * gradfx
-        return alpha
+    # def set_init_alpha(self, x):
+    #     s = 1e-2
+    #     _ = self.prob.funcf(x)
+    #     gradfx = self.prob.gradf(x)
+    #     y = x - s * gradfx
+    #     while True:
+    #         if utils.l2_norm(y - x) > 1e-8:
+    #             _ = self.prob.funcf(y)
+    #             gradfy = self.prob.gradf(y)
+    #             alpha = utils.l2_norm(x - y) / (1 * utils.l2_norm(gradfx - gradfy))
+    #             break
+    #         else:
+    #             s *= 10
+    #             y = x - s * gradfx
+    #     return alpha
 
     def proximal_update(self, x, gradfx, alpha, scalesubgrad, epsilon_safeguard=1e9):
         self.bak = 0
@@ -106,7 +106,8 @@ class Solver:
         if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
-            alpha = self.set_init_alpha(x)
+            # alpha = self.set_init_alpha(x)
+            alpha = 1.0
 
         # print algorithm params
         outID = self.prob.f.datasetName

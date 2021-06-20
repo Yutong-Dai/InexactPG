@@ -66,6 +66,8 @@ class Solver:
         gevals += 1
         lambda_full = None
         subits = 0
+        # count subsits in full dualDim computation
+        subits_equiv = 0
         while True:
             print_start = time.time()
             if self.printlevel > 0:
@@ -85,6 +87,7 @@ class Solver:
             if gap >= 1e10:
                 self.status = -2
             subits += subit
+            subits_equiv += subit * self.prob.dualProbDim / len(lambda_full) 
             nz = np.sum(xaprox == 0)
             nnz = self.prob.p - nz
             # collect stats

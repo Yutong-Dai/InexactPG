@@ -142,12 +142,13 @@ class ProbLatentOG(Problem):
             bak = 0
             stepsize = 1.0
             lambda_trial = np.zeros((GA, 1))
+            dirder = grad.T @ d
             while True:
                 lambda_trial = lambda_working + stepsize * d
                 s_trial = I @ lambda_trial
                 fdiff = (uk**2).T @ (I @ ((lambda_trial - lambda_working)) / ((1 + s_trial) * (1 + s_working))) + np.sum(weights_proj_grp**2 * (lambda_working - lambda_trial))
-                dirder = grad.T @ d
-                rhs = params['eta'] * dirder
+                # dirder = grad.T @ d
+                rhs = params['eta'] * dirder * stepsize
                 if np.abs(fdiff) <= 1e-18 and np.abs(rhs) <= 1e-18:
                     isContinue = False
                 else:

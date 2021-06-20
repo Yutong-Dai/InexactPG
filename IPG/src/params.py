@@ -10,9 +10,9 @@ from numpy import inf
 params = {}
 # termination
 params['tol'] = 1e-6
-params['max_iter'] = 20000
+params['max_iter'] = inf
 params['max_time'] = 3600
-params['max_back'] = 100
+params['max_back'] = 50
 # print
 params['printlevel'] = 2
 params['printevery'] = 20
@@ -25,13 +25,12 @@ params['zeta'] = 0.8
 # this trick is used in tfocs implementation
 # to boost numerical performance
 params['beta'] = 1  # 1 / 0.9
-params['update_alpha_strategy'] = 'none'  # model / none /frac
+params['update_alpha_strategy'] = 'tfocs'  # model / none /frac / tfocs
 params['optimality_measure'] = 'aprox'  # iterates
 params['inexact_type'] = 1  # 1:mine 2: Lee-like 3:schimdt
 params['gamma1'] = 1e-12
 params['gamma2'] = 1e-12
 params['nu'] = 0.5
-params['rtype'] = 'exact'
 # parameters for schimdt method
 params['delta'] = 3  # 1e-3
 params['schimdt_const'] = 1  # c/k^3
@@ -43,13 +42,13 @@ params['schimdt_const'] = 1  # c/k^3
 params['scale_alpha'] = True
 
 # config for subsolvers
-params['subsolver'] = 'projectedNewton'
+params['subsolver'] = 'projectedGD'
 params['warm_start'] = True
 params['subsolver_verbose'] = False
 params['projectedNewton'] = {}
 params['projectedNewton']['maxiter'] = 100
 params['projectedGD'] = {}
-params['projectedGD']['maxiter'] = 1000
+params['projectedGD']['maxiter'] = 100
 params['projectedGD']['stepsize'] = 1
 
 

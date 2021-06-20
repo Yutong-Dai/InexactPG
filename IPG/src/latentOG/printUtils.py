@@ -181,6 +181,7 @@ def print_result(info, outID=None):
     contents += "=" * 30 + '\n'
     contents += 'Iterations:{:.>65}{:d}\n'.format("", info['iteration'])
     contents += 'Sub iters :{:.>65}{:d}\n'.format("", info['subits'])
+    contents += 'Sub iters Equiv :{:.>60}{:f}\n'.format("", info['subits_equiv'])
     contents += 'CPU seconds:{:.>64}{:.4f}\n'.format("", info['time'])
     if info['nz'] is not None:
         contents += 'number of sparse groups:{:.>52}{:d}\n'.format("", info['nz'])
