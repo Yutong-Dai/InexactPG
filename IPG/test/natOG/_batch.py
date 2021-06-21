@@ -16,10 +16,10 @@ import numpy as np
 
 import src.utils as utils
 from src.params import fileTypeDict
-from src.regularizer import LatentOG
+from src.regularizer import natOG
 from src.lossfunction import LogisticLoss, LeastSquares
-from src.latentOG.Problem import ProbLatentOG
-from src.latentOG.Solver import Solver
+from src.natOG.Problem import ProbNatOG
+from src.natOG.Solver import Solver
 
 
 def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio, datasetName, params, dbDir='../../../db'):
@@ -57,10 +57,11 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
         #     L = utils.estimate_lipschitz(X, loss)
         #     savemat(Lip_path, {"L": L})
         #     print(f"save Lipschitz constant to: {Lip_path}")
-        r = LatentOG(Lambda=lammax * lambda_shrinkage, dim=p, starts=starts, ends=ends)
-        prob = ProbLatentOG(f, r)
+        r = natOG(Lambda=lammax * lambda_shrinkage, dim=p, starts=starts, ends=ends)
+        r.createYStartsEnds()
+        prob = ProbNatOG(f, r)
         solver = Solver(prob, params)
-        info = solver.solve(alpha=1, explore=True)
+        info = solver.solve(alpha=1, explore=False)
         datasetid = "{}_{}_{}_{}".format(datasetName, lambda_shrinkage, group_size, overlap_ratio)
         info['datasetid'] = datasetid
         info_name = directory + "/{}_info.npy".format(datasetName)

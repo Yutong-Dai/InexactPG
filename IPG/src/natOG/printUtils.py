@@ -53,7 +53,7 @@ def print_algorithm(algodic, outID=None):
         contents += 'Termination Conditions:\n'
         contents += f" optimality measure: {algodic['optimality_measure']}| tol:{algodic['tol']} | maxiter:{algodic['max_iter']} | maxtime:{algodic['max_time']}\n"
         contents += 'Lineserch Parameters:\n'
-        contents += f" eta:{algodic['eta']} | xi:{algodic['xi']} | zeta:{algodic['zeta']} \n"
+        contents += f" eta:{algodic['eta']} | xi:{algodic['xi']} | zeta:{algodic['zeta']} | maxbak:{algodic['max_back']}\n"
         contents += 'Proximal Stepsize update:\n'
         contents += f" update strategy:{algodic['update_alpha_strategy']} | scale alpha for comparsion:{algodic['scale_alpha']}\n"
         contents += f"Inexact Strategy:\n"
@@ -189,6 +189,8 @@ def print_result(info, outID=None):
         contents += 'Optimality error:{:.>59}{:8.6e}\n'.format("", info['optim'])
     contents += 'Function evaluations:{:.>55}{:d}\n'.format("", info['fevals'])
     contents += 'Gradient evaluations:{:.>55}{:d}\n'.format("", info['gevals'])
+    contents += 'subFunction evaluations:{:.>52}{:d}\n'.format("", info['subfevals'])
+    contents += 'subGradient evaluations:{:.>52}{:d}\n'.format("", info['subgevals'])
     with open(filename, "a") as logfile:
         logfile.write(contents)
 

@@ -18,7 +18,7 @@ from _batch import runall
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth testing.')
-parser.add_argument('--date', default='06_12_2021', type=str, help='experiment date')
+parser.add_argument('--date', default='06_21_2021', type=str, help='experiment date')
 parser.add_argument('--loss', default='logit', type=str, help='ls/logit')
 parser.add_argument('--lam_shrink', default=0.8, type=float, help='lambda shrink parameters')
 parser.add_argument('--group_size', default=10, type=int, help='number of variables per group')
@@ -44,10 +44,10 @@ params['gamma2'] = args.gamma2
 params['nu'] = args.nu
 params['delta'] = args.delta
 params['schimdt_const'] = args.schimdt_const
-
+params['update_alpha_strategy'] = 'none'
 
 if args.loss == 'logit':
-    datasets = ["a9a", "australian", "colon_cancer", "duke", "gisette",
+    datasets = ["a9a", "colon_cancer", "duke", "gisette",
                 "leu", "madelon", "mushrooms", "w8a"]
 else:
     datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',

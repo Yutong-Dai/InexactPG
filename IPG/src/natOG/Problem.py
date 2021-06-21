@@ -111,6 +111,7 @@ class ProbNatOG(Problem):
         Matrix, we operate on its compressed form.
 
         """
+        self.fevals, self.gevals = 0, 0
         uk = xk - alphak * gradfxk
         # phipxk = 0.5 * utils.l2_norm(xk-uk_origin) + alphak * self.r.func(xk)
         # ----------------------- pre-screening to select variables to work on ---------
@@ -147,11 +148,13 @@ class ProbNatOG(Problem):
         # ----------------- perform the projected gradient descent -------------
         z = self._zFromY(Y, vk, nonZeroGroupFlag)
         fdualY, part2 = self._dual(Y, z, vk, nonZeroGroupFlag)
+        self.fevals += 1
         iters = 0
         dual_gap_last_iter = 1e9
         while True:
             # ----------------------- one iteration of PGD -------------------------
             Ytrial, gradY = self._proj(Y, z, params['projectedGD']['stepsize'], alphak, nonZeroGroupFlag)
+            self.gevals += 1
             norm_grad = utils.l2_norm(gradY)
             # search direction
             d = Ytrial - Y
@@ -163,6 +166,7 @@ class ProbNatOG(Problem):
                 Ytrial = Y + stepsize * d
                 ztrial = self._zFromY(Ytrial, vk, nonZeroGroupFlag)
                 fdualYtrial, part2 = self._dual(Ytrial, ztrial, vk, nonZeroGroupFlag)
+                self.fevals += 1
                 lhs =  fdualYtrial - fdualY 
                 rhs = dirder * stepsize * params['eta'] 
                 # print(f"iter:{iters:2d} | bak:{bak:2d} | lhs:{lhs:3.3e} | rhs:{rhs:3.3e} | dirder:{dirder:3.3e}")

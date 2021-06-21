@@ -125,6 +125,8 @@ class Solver:
         gevals += 1
         Y = None
         subits = 0
+        subfevals = 0
+        subgevals = 0
         # count subsits in full dualDim computation
         subits_equiv = 0
         # consequtive_no_bak = 0
@@ -152,6 +154,8 @@ class Solver:
                 self.status = -2
             subits += subit
             subits_equiv += subit * self.prob.dualProbDim / len(Y) 
+            subfevals += self.prob.fevals
+            subgevals += self.prob.gevals
             nz = np.sum(xaprox == 0)
             nnz = self.prob.p - nz
             # collect stats
@@ -264,7 +268,8 @@ class Solver:
             'nz': nz, 'nnz': nnz, 'status': self.status,
             'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
-            'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv}
+            'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv,
+            'subfevals':subfevals, 'subgevals':subgevals}
         if explore:
             info['Fseq'] = Fseq
             info['Eseq'] = Eseq

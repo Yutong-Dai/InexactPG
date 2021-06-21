@@ -166,7 +166,7 @@ class Solver:
             'nz': nz, 'nnz': nnz, 'status': self.status,
             'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
-            'K': self.prob.K, 'subits': subits}
+            'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv}
         if explore:
             # info['Fseq'] = Fseq
             info['Eseq'] = Eseq

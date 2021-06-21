@@ -33,9 +33,9 @@ def create(task_name, outdir, scriptdir, finishdir, node, mem, file, *argv, pbsD
 
 if __name__ == '__main__':
     outdir = "IPG/test/log/cache"
-    scriptdir = "IPG/test/latentOG"
-    finishdir = "/home/yud319/InexactPG/IPG/test/pbs/latentOG"
-    date = "06_21_2021"
+    scriptdir = "IPG/test/natOG"
+    finishdir = "/home/yud319/InexactPG/IPG/test/pbs/natOG"
+    date = "06_20_2021"
 
     inexact_type = 1
     for loss in ['logit']:
@@ -62,7 +62,7 @@ if __name__ == '__main__':
                                        f'--gamma1 {gamma1}')
     inexact_type = 2
     for loss in ['logit']:
-        for lam_shrink in [0.8, 0.1, 0.05]:
+        for lam_shrink in [0.1, 0.05]:
             for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:
@@ -87,13 +87,13 @@ if __name__ == '__main__':
                                            f'--nu {nu}')
     inexact_type = 3
     for loss in ['logit']:
-        for lam_shrink in [0.8, 0.1, 0.05]:
+        for lam_shrink in [0.1, 0.05]:
             for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:
                         for warm_start in [True]:
                             for delta in [3]:
-                                for schimdt_const in [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]:
+                                for schimdt_const in [1e1, 1e2, 1e3, 1e4, 1e5, 1e6]:
                                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{subsolver}_{warm_start}_{delta}_{schimdt_const}',
                                            outdir,
                                            scriptdir,

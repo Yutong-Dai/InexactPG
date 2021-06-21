@@ -28,6 +28,7 @@ parser.add_argument('--max_time', default=3600, type=int, help='max time in seco
 parser.add_argument('--inexact_type', default=1, type=int, help='1/2/3')
 parser.add_argument('--subsolver', default='projectedGD', type=str, help='desired accuracy')
 parser.add_argument('--warm_start', default=True, type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help='warm start for subsolver')
+parser.add_argument('--largedb', default=False, type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help='test large db')
 parser.add_argument('--gamma1', default=1e-12, type=float, help='params for inexact_type 1')
 parser.add_argument('--gamma2', default=1e-12, type=float, help='params for inexact_type 2')
 parser.add_argument('--nu', default=0.5, type=float, help='params for inexact_type 2')
@@ -45,11 +46,14 @@ params['nu'] = args.nu
 params['delta'] = args.delta
 params['schimdt_const'] = args.schimdt_const
 params['subsolver_verbose'] = False
-params['projectedGD']['stepsize'] = 1.0
+params['scale_alpha'] = False
 
 if args.loss == 'logit':
-    datasets = ["a9a", "australian", "colon_cancer", "duke", "gisette",
-                "leu", "madelon", "mushrooms", "w8a"]
+    if not args.largedb:
+        datasets = ["a9a", "colon_cancer", "duke", "gisette",
+                    "leu", "madelon", "mushrooms", "w8a"]
+    else:
+        datasets = ["rcv1", "real-sim", "news20"]
 else:
     datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                 'housing_scale', 'pyrim_scale', 'YearPredictionMSD',

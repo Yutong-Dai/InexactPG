@@ -126,7 +126,7 @@ class PerformanceProfile:
                     raise ValueError(msg)
         print(f"After subsetting, {num_records} instances are kept.")
 
-    def plot(self, column, options={}, save=False, saveDir='./', ext=None, dpi=300, show_num=False, use_tt=True, plot=True, aoc=True, factor=1.5):
+    def plot(self, column, options={}, save=False, saveDir='./', ext=None, dpi=300, show_num=False, use_tt=True, plot=True, auc=True, factor=1.5):
         if 'color' not in options.keys():
             options['color'] = 'rgb'
         if 'ratio_max' not in options.keys():
@@ -152,7 +152,7 @@ class PerformanceProfile:
                 flag = ratio > 0
                 bars_pos[flag] = ratio[flag]
                 bars_neg[~flag] = ratio[~flag]
-                if aoc:
+                if auc:
                     posmax = np.max(bars_pos[bars_pos != np.inf])
                     negmin = np.min(bars_neg[bars_neg != -np.inf])
                     ratio_max = max(posmax, -negmin)
@@ -166,9 +166,9 @@ class PerformanceProfile:
                 # sort in descending order
                 bars_pos[::-1].sort()
                 bars_neg[::-1].sort()
-                if aoc:
-                    win_aoc = np.around(np.sum(bars_pos), 3)
-                    lose_aoc = np.around(np.abs(np.sum(bars_neg)), 3)
+                if auc:
+                    win_auc = np.around(np.sum(bars_pos), 3)
+                    lose_auc = np.around(np.abs(np.sum(bars_neg)), 3)
                 win = sum(flag)
                 lose = sum(ratio < 0)
                 if plot:
@@ -176,12 +176,15 @@ class PerformanceProfile:
                     if show_num:
                         label_1 = algo1 + ' {}'.format(win)
                         label_2 = algo2 + ' {}'.format(lose)
-                        if aoc:
-                            label_1 += f' aoc:{win_aoc}'
-                            label_2 += f' aoc:{lose_aoc}'
+                        if auc:
+                            label_1 += f' auc:{win_auc}'
+                            label_2 += f' auc:{lose_auc}'
                     else:
-                        label_1 = self.algo_lst[algo1]
-                        label_2 = self.algo_lst[algo2]
+                        label_1 = algo1
+                        label_2 = algo2
+                        if auc:
+                            label_1 += f' auc:{win_auc}'
+                            label_2 += f' auc:{lose_auc}'
                         print('{} Win:{} | Lose:{}'.format(algo1, win, lose))
                     if use_tt:
                         label_1 = r'\texttt{{{}}}'.format(label_1)
@@ -208,7 +211,7 @@ class PerformanceProfile:
                         text = 'subgradient iterations'
                     else:
                         text = column
-                    if aoc:
+                    if auc:
                         plt.title("Metric: {} (Area Under the Curve)".format(text))
                     else:
                         plt.title("Metric: {}".format(text))
@@ -224,8 +227,8 @@ class PerformanceProfile:
                             figure.savefig(filename)
                 else:
                     key = f'{algo1}_{algo2}'
-                    if aoc:
-                        pools[key] = (win_aoc, lose_aoc, algo1, algo2)
+                    if auc:
+                        pools[key] = (win_auc, lose_auc, algo1, algo2)
                     else:
                         pools[key] = (win, lose, algo1, algo2)
         return pools

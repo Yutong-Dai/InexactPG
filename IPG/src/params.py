@@ -25,7 +25,7 @@ params['zeta'] = 0.8
 # this trick is used in tfocs implementation
 # to boost numerical performance
 params['beta'] = 1  # 1 / 0.9
-params['update_alpha_strategy'] = 'tfocs'  # model / none /frac / tfocs
+params['update_alpha_strategy'] = 'model'  # model / none /frac 
 params['optimality_measure'] = 'aprox'  # iterates
 params['inexact_type'] = 1  # 1:mine 2: Lee-like 3:schimdt
 params['gamma1'] = 1e-12

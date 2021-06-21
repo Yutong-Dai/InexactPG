@@ -50,7 +50,7 @@ if __name__ == '__main__':
     #                                    scriptdir,
     #                                    finishdir,
     #                                    '1', '4',
-    #                                    'runall_patch.py',
+    #                                    'runall.py',
     #                                    f'--date {date}',
     #                                    f'--loss {loss}',
     #                                    f'--lam_shrink {lam_shrink}',
@@ -60,46 +60,47 @@ if __name__ == '__main__':
     #                                    f'--subsolver {subsolver}',
     #                                    f'--warm_start {warm_start}',
     #                                    f'--gamma1 {gamma1}')
-    inexact_type = 2
-    for loss in ['logit']:
-        for lam_shrink in [0.1]:
-            for group_size in [10]:
-                for overlap_ratio in [0.5]:
-                    for subsolver in ['projectedGD']:
-                        for warm_start in [True]:
-                            for gamma2 in [1e-12]:
-                                for nu in [0.9]:
-                                    create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{subsolver}_{warm_start}_{gamma2}_{nu}',
-                                           outdir,
-                                           scriptdir,
-                                           finishdir,
-                                           '1', '4',
-                                           'runall_patch.py',
-                                           f'--date {date}',
-                                           f'--loss {loss}',
-                                           f'--lam_shrink {lam_shrink}',
-                                           f'--group_size {group_size}',
-                                           f'--overlap_ratio {overlap_ratio}',
-                                           f'--inexact_type {inexact_type}',
-                                           f'--subsolver {subsolver}',
-                                           f'--warm_start {warm_start}',
-                                           f'--gamma2 {gamma2}',
-                                           f'--nu {nu}')
+    # inexact_type = 2
+    # for loss in ['logit']:
+    #     for lam_shrink in [0.8, 0.1, 0.05]:
+    #         for group_size in [10, 100]:
+    #             for overlap_ratio in [0.1, 0.3, 0.5]:
+    #                 for subsolver in ['projectedGD']:
+    #                     for warm_start in [True]:
+    #                         for gamma2 in [1e-12]:
+    #                             for nu in [0.1, 0.5, 0.9]:
+    #                                 create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{subsolver}_{warm_start}_{gamma2}_{nu}',
+    #                                        outdir,
+    #                                        scriptdir,
+    #                                        finishdir,
+    #                                        '1', '4',
+    #                                        'runall.py',
+    #                                        f'--date {date}',
+    #                                        f'--loss {loss}',
+    #                                        f'--lam_shrink {lam_shrink}',
+    #                                        f'--group_size {group_size}',
+    #                                        f'--overlap_ratio {overlap_ratio}',
+    #                                        f'--inexact_type {inexact_type}',
+    #                                        f'--subsolver {subsolver}',
+    #                                        f'--warm_start {warm_start}',
+    #                                        f'--gamma2 {gamma2}',
+    #                                        f'--nu {nu}')
     inexact_type = 3
     for loss in ['logit']:
-        for lam_shrink in [0.1]:
-            for group_size in [10]:
-                for overlap_ratio in [0.5]:
+        for lam_shrink in [0.8, 0.1, 0.05]:
+            for group_size in [10, 100]:
+                for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:
                         for warm_start in [True]:
                             for delta in [3]:
-                                for schimdt_const in [1e3]:
+                                # for schimdt_const in [1e-1, 1e0,  1e3, 1e5]:
+                                for schimdt_const in [1e1, 1e2, 1e4, 1e6]:
                                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{subsolver}_{warm_start}_{delta}_{schimdt_const}',
                                            outdir,
                                            scriptdir,
                                            finishdir,
                                            '1', '4',
-                                           'runall_patch.py',
+                                           'runall.py',
                                            f'--date {date}',
                                            f'--loss {loss}',
                                            f'--lam_shrink {lam_shrink}',
