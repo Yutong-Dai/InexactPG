@@ -109,3 +109,9 @@
 3_logit_0.1_100_0.1_projectedGD_True_3_1.0.pbs
 3_logit_0.1_100_0.5_projectedGD_True_3_1000000.0.pbs
 3_logit_0.05_10_0.5_projectedGD_True_3_10000.0.pbs
+3_logit_0.1_100_0.3_projectedGD_True_3_100.0.pbs
+3_logit_0.05_10_0.3_projectedGD_True_3_1000.0.pbs
+3_logit_0.1_100_0.5_projectedGD_True_3_100000.0.pbs
+3_logit_0.05_10_0.1_projectedGD_True_3_1.0.pbs
+3_logit_0.1_100_0.5_projectedGD_True_3_10000.0.pbs
+3_logit_0.1_100_0.5_projectedGD_True_3_1000.0.pbs

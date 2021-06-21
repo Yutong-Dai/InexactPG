@@ -217,9 +217,9 @@ class PerformanceProfile:
                         plt.title("Metric: {}".format(text))
                     if save:
                         if ext is None:
-                            filename = saveDir + '{}-{}_{}.eps'.format(algo1, algo2, column)
+                            filename = saveDir + '/{}-{}_{}.eps'.format(algo1, algo2, column)
                         else:
-                            filename = saveDir + '{}-{}_{}_{}.eps'.format(algo1, algo2, column, ext)
+                            filename = saveDir + '/{}-{}_{}_{}.eps'.format(algo1, algo2, column, ext)
                         # metrics
                         if dpi:
                             figure.savefig(filename, dpi=dpi)
