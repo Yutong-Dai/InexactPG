@@ -62,7 +62,7 @@ if __name__ == '__main__':
                                        f'--gamma1 {gamma1}')
     inexact_type = 2
     for loss in ['logit']:
-        for lam_shrink in [0.8, 0.1, 0.05]:
+        for lam_shrink in [0.1, 0.05]:
             for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:
@@ -87,7 +87,7 @@ if __name__ == '__main__':
                                            f'--nu {nu}')
     inexact_type = 3
     for loss in ['logit']:
-        for lam_shrink in [0.8, 0.1, 0.05]:
+        for lam_shrink in [0.1, 0.05]:
             for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.3, 0.5]:
                     for subsolver in ['projectedGD']:

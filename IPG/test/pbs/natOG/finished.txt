@@ -1,0 +1,2 @@
+3_logit_0.05_100_0.1_projectedGD_True_3_1.0.pbs
+3_logit_0.05_10_0.1_projectedGD_True_3_1.0.pbs

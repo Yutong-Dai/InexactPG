@@ -189,6 +189,8 @@ def print_result(info, outID=None):
         contents += 'Optimality error:{:.>59}{:8.6e}\n'.format("", info['optim'])
     contents += 'Function evaluations:{:.>55}{:d}\n'.format("", info['fevals'])
     contents += 'Gradient evaluations:{:.>55}{:d}\n'.format("", info['gevals'])
+    contents += 'subFunction evaluations:{:.>52}{:d}\n'.format("", info['subfevals'])
+    contents += 'subGradient evaluations:{:.>52}{:d}\n'.format("", info['subgevals'])
     with open(filename, "a") as logfile:
         logfile.write(contents)
 

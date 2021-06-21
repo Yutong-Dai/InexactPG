@@ -60,7 +60,7 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
         r = LatentOG(Lambda=lammax * lambda_shrinkage, dim=p, starts=starts, ends=ends)
         prob = ProbLatentOG(f, r)
         solver = Solver(prob, params)
-        info = solver.solve(alpha=1 / L, explore=True)
+        info = solver.solve(alpha=1 / L, explore=False)
         datasetid = "{}_{}_{}_{}".format(datasetName, lambda_shrinkage, group_size, overlap_ratio)
         info['datasetid'] = datasetid
         info_name = directory + "/{}_info.npy".format(datasetName)

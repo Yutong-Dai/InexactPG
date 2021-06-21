@@ -92,6 +92,7 @@ class ProbLatentOG(Problem):
                 params['inexact_type'] 3: O(1/k^3)
         reference: https://sites.math.washington.edu/~burke/crs/408/notes/nlp/gpa.pdf
         """
+        self.fevals, self.gevals = 0, 0
         uk = xk - alphak * gradfxk
         # ----------------------- pre-screening to select variables to be projetced ---------
         to_be_projected_groups = np.full(self.K, False)
@@ -135,6 +136,7 @@ class ProbLatentOG(Problem):
             s_working = I @ lambda_working
             denominator = 1 / (1 + s_working)
             grad = weights_proj_grp**2 - I.T @ ((uk * denominator)**2)
+            self.gevals += 1
             norm_grad = utils.l2_norm(grad)
             # search direction
             d = np.maximum(0, lambda_working - params['projectedGD']['stepsize'] * grad) - lambda_working
@@ -147,6 +149,7 @@ class ProbLatentOG(Problem):
                 lambda_trial = lambda_working + stepsize * d
                 s_trial = I @ lambda_trial
                 fdiff = (uk**2).T @ (I @ ((lambda_trial - lambda_working)) / ((1 + s_trial) * (1 + s_working))) + np.sum(weights_proj_grp**2 * (lambda_working - lambda_trial))
+                self.fevals += 2
                 # dirder = grad.T @ d
                 rhs = params['eta'] * dirder * stepsize
                 if np.abs(fdiff) <= 1e-18 and np.abs(rhs) <= 1e-18:
