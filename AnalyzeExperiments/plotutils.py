@@ -126,7 +126,8 @@ class PerformanceProfile:
                     raise ValueError(msg)
         print(f"After subsetting, {num_records} instances are kept.")
 
-    def plot(self, column, options={}, save=False, saveDir='./', ext=None, dpi=300, show_num=False, use_tt=True, plot=True, auc=True, factor=1.5):
+    def plot(self, column, options={}, save=False, saveDir='./', ext=None, dpi=300, 
+    show_num=False, use_tt=True, plot=True, auc=True, factor=1.5, format='pdf', labels=None):
         if 'color' not in options.keys():
             options['color'] = 'rgb'
         if 'ratio_max' not in options.keys():
@@ -138,6 +139,9 @@ class PerformanceProfile:
             for j in range(i + 1, self.num_algo):
                 algo1 = self.algo_lst[i]
                 algo2 = self.algo_lst[j]
+                if labels is not None:
+                    algo1_label = labels[i]
+                    algo2_label = labels[j]
                 data1 = self.algo_df_dic[algo1][column].copy()
                 data2 = self.algo_df_dic[algo2][column].copy()
                 data1.loc[data1 < 0] = np.inf
@@ -174,14 +178,22 @@ class PerformanceProfile:
                 if plot:
                     figure = plt.figure()
                     if show_num:
-                        label_1 = algo1 + ' {}'.format(win)
-                        label_2 = algo2 + ' {}'.format(lose)
+                        if labels is None:
+                            label_1 = algo1 + ' {}'.format(win)
+                            label_2 = algo2 + ' {}'.format(lose)
+                        else:
+                            label_1 = algo1_label + ' {}'.format(win)
+                            label_2 = algo2_label + ' {}'.format(lose)
                         if auc:
                             label_1 += f' auc:{win_auc}'
                             label_2 += f' auc:{lose_auc}'
                     else:
-                        label_1 = algo1
-                        label_2 = algo2
+                        if labels is None:
+                            label_1 = algo1
+                            label_2 = algo2
+                        else:
+                            label_1 = algo1_label
+                            label_2 = algo2_label
                         if auc:
                             label_1 += f' auc:{win_auc}'
                             label_2 += f' auc:{lose_auc}'
@@ -217,9 +229,9 @@ class PerformanceProfile:
                         plt.title("Metric: {}".format(text))
                     if save:
                         if ext is None:
-                            filename = saveDir + '/{}-{}_{}.eps'.format(algo1, algo2, column)
+                            filename = saveDir + '/{}-{}_{}.{}'.format(algo1, algo2, column, format)
                         else:
-                            filename = saveDir + '/{}-{}_{}_{}.eps'.format(algo1, algo2, column, ext)
+                            filename = saveDir + '/{}-{}_{}_{}.{}'.format(algo1, algo2, column, ext, format)
                         # metrics
                         if dpi:
                             figure.savefig(filename, dpi=dpi)
