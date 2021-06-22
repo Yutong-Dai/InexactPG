@@ -50,10 +50,10 @@ params['scale_alpha'] = False
 
 if args.loss == 'logit':
     if not args.largedb:
-        datasets = ["a9a", "colon_cancer", "duke", "gisette",
+        datasets = ["a9a", "colon_cancer", "duke",
                     "leu", "madelon", "mushrooms", "w8a"]
     else:
-        datasets = ["rcv1", "real-sim", "news20"]
+        datasets = ["rcv1", "real-sim", "news20", "gisette"]
 else:
     datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                 'housing_scale', 'pyrim_scale', 'YearPredictionMSD',

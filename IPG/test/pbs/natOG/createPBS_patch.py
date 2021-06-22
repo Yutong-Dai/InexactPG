@@ -44,7 +44,7 @@ if __name__ == '__main__':
                     for subsolver in ['projectedGD']:
                         for warm_start in [True]:
                             for delta in [3]:
-                                for schimdt_const in [1e0]:
+                                for schimdt_const in [1e2]:
                                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{subsolver}_{warm_start}_{delta}_{schimdt_const}',
                                            outdir,
                                            scriptdir,
