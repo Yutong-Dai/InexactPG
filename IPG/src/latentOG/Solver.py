@@ -25,18 +25,22 @@ class Solver:
         if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
-            alpha = self.set_init_alpha(x)
+            alpha = 1.0
+            provide_L = False
+        else:
+            # assume alpha = 1/L
+            provide_L = True
         if self.params['scale_alpha']:
             alpha = (1 - self.params['eta']) * alpha
             if self.params['inexact_type'] == 1:
                 self.params['gamma1'] = 0.5
         else:
-            if self.params['inexact_type'] == 1:
-                # self.params['gamma1'] = 1 / (2 - 3 * self.params['eta'])
-                self.params['gamma1'] = 1 / (1 - 2 * self.params['eta'])
-                alpha *= 3 / 2
-            if self.params['inexact_type'] == 2:
-                alpha = (1 - self.params['eta']) * alpha
+            if provide_L:
+                if self.params['inexact_type'] == 1:
+                    self.params['gamma1'] = 1 / (2 - 3 * self.params['eta'])
+                    # such that alpha = 1/L
+                if self.params['inexact_type'] == 2:
+                    alpha = (1 - self.params['eta']) * alpha
 
         # print algorithm params
         outID = self.prob.f.datasetName
@@ -138,20 +142,10 @@ class Solver:
             #     printUtils.print_linesearch(self.d_norm, 0, 1.0, outID)
             print_cost = time.time() - temp
             # update proximal gradient stepsize
-            if self.update_alpha_strategy == 'frac':
-                if self.bak > 0:
+            if not provide_L:
+                diff = xtrial - x
+                if fval_xtrial - fvalx > np.sum(gradfx * diff) + 1/(2*alpha) * np.sum(diff * diff):
                     alpha *= self.zeta
-            elif self.update_alpha_strategy == 'model':
-                d = xtrial - x
-                d_norm_sq = utils.l2_norm(d) ** 2
-                dirder = np.dot(gradfx.T, d)[0][0]
-                actual_decrease = fval_xtrial - fvalx
-                L_local = 2 * (actual_decrease - dirder) / d_norm_sq
-                alpha = max(1 / max(L_local, 1e-8), alpha * self.zeta)
-            elif self.update_alpha_strategy == 'none':
-                pass
-            else:
-                raise ValueError(f'Invalid update_alpha_strategy: {self.update_alpha_strategy}')
 
             # perform update
             iteration += 1

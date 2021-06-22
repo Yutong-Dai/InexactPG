@@ -35,7 +35,7 @@ if __name__ == '__main__':
     outdir = "IPG/test/log/cache"
     scriptdir = "IPG/test/latentOG"
     finishdir = "/home/yud319/InexactPG/IPG/test/pbs/latentOG"
-    date = "06_21_2021"
+    date = "06_22_2021"
 
     inexact_type = 1
     for loss in ['logit']:

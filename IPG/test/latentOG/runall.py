@@ -18,13 +18,13 @@ from _batch import runall
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth testing.')
-parser.add_argument('--date', default='06_21_2021', type=str, help='experiment date')
+parser.add_argument('--date', default='06_22_2021', type=str, help='experiment date')
 parser.add_argument('--loss', default='logit', type=str, help='ls/logit')
 parser.add_argument('--lam_shrink', default=0.8, type=float, help='lambda shrink parameters')
 parser.add_argument('--group_size', default=10, type=int, help='number of variables per group')
 parser.add_argument('--overlap_ratio', default=0.1, type=float, help='overlap ratio for each groups')
 parser.add_argument('--tol', default=1e-5, type=float, help='desired accuracy')
-parser.add_argument('--max_time', default=3600, type=int, help='max time in seconds')
+parser.add_argument('--max_time', default=7200, type=int, help='max time in seconds')
 parser.add_argument('--inexact_type', default=1, type=int, help='1/2/3')
 parser.add_argument('--subsolver', default='projectedGD', type=str, help='desired accuracy')
 parser.add_argument('--warm_start', default=True, type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help='warm start for subsolver')
@@ -45,6 +45,7 @@ params['nu'] = args.nu
 params['delta'] = args.delta
 params['schimdt_const'] = args.schimdt_const
 params['update_alpha_strategy'] = 'none'
+params['scale_alpha'] = False
 
 if args.loss == 'logit':
     datasets = ["a9a", "colon_cancer", "duke", "gisette",

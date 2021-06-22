@@ -77,18 +77,18 @@ class PerformanceProfile:
     def __init__(self, algo_df_dic, failcode=-2, overwriteFailed=True):
         self.algo_lst = [*algo_df_dic.keys()]
         self.algo_df_dic = deepcopy(algo_df_dic)
-        all_failled = algo_df_dic[self.algo_lst[0]]['datasetid'].to_numpy()
+        all_failed = algo_df_dic[self.algo_lst[0]]['datasetid'].to_numpy()
         for algo in self.algo_lst:
             frame = self.algo_df_dic[algo]
             if overwriteFailed:
                 failed_idx = frame['status'] == failcode
-                all_failled = np.intersect1d(all_failled, frame[failed_idx]['datasetid'].to_numpy())
+                all_failed = np.intersect1d(all_failed, frame[failed_idx]['datasetid'].to_numpy())
                 frame.loc[failed_idx, 'time'] = np.inf
                 frame.loc[failed_idx, 'iteration'] = np.inf
                 frame.loc[failed_idx, 'subgrad_iters'] = np.inf
                 frame.loc[failed_idx, 'nnz'] = np.inf
-        print(f"All algorithms failed in {len(all_failled)} instances")
-        self.all_failled = all_failled
+        print(f"All algorithms failed in {len(all_failed)} instances (failure code {failcode})")
+        self.all_failed = all_failed
         if overwriteFailed:
             print("Metrics for failed instances are overwritten with np.inf")
 
@@ -102,7 +102,7 @@ class PerformanceProfile:
             qualified_datasetid = frame[frame['time'] >= threshold]['datasetid'].to_numpy()
             filter_condition = np.union1d(filter_condition, qualified_datasetid)
         if remove_failed:
-            filter_condition = np.setdiff1d(filter_condition, self.all_failled)
+            filter_condition = np.setdiff1d(filter_condition, self.all_failed)
         filter_condition = np.sort(filter_condition)
         for algo in self.algo_lst:
             frame = self.algo_df_dic[algo]

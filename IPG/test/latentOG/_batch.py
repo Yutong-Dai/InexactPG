@@ -50,17 +50,18 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
             savemat(lammax_path, {"lammax": lammax})
             print(f"save lammax to: {lammax_path}")
 
-        if os.path.exists(Lip_path):
-            L = loadmat(Lip_path)["L"][0][0]
-            print(f"loading Lipschitz constant from: {Lip_path}")
-        else:
-            L = utils.estimate_lipschitz(X, loss)
-            savemat(Lip_path, {"L": L})
-            print(f"save Lipschitz constant to: {Lip_path}")
+        # if os.path.exists(Lip_path):
+        #     L = loadmat(Lip_path)["L"][0][0]
+        #     print(f"loading Lipschitz constant from: {Lip_path}")
+        # else:
+        #     L = utils.estimate_lipschitz(X, loss)
+        #     savemat(Lip_path, {"L": L})
+        #     print(f"save Lipschitz constant to: {Lip_path}")
         r = LatentOG(Lambda=lammax * lambda_shrinkage, dim=p, starts=starts, ends=ends)
         prob = ProbLatentOG(f, r)
         solver = Solver(prob, params)
-        info = solver.solve(alpha=1 / L, explore=False)
+        # info = solver.solve(alpha=1 / L, explore=False)
+        info = solver.solve(alpha=None, explore=False)
         datasetid = "{}_{}_{}_{}".format(datasetName, lambda_shrinkage, group_size, overlap_ratio)
         info['datasetid'] = datasetid
         info_name = directory + "/{}_info.npy".format(datasetName)
