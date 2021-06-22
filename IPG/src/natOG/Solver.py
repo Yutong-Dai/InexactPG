@@ -221,16 +221,6 @@ class Solver:
                                 
                         elif self.update_alpha_strategy == 'none':
                             pass
-                        # elif self.update_alpha_strategy == 'tfocs':
-                        #     if self.bak > 0:
-                        #         alpha = max(1e-8, alpha*0.9)
-                        #         # consequtive_no_bak = 0
-                        #     else:
-                        #         if flag == 'desired_':
-                        #             alpha = min(1e8, alpha*1.1)
-                        #         # consequtive_no_bak += 1
-                        #         # if consequtive_no_bak > 3 and flag == 'desired_':
-                        #         #     alpha = min(1e8, alpha*1.1)
                         else:
                             raise ValueError(f'Invalid update_alpha_strategy: {self.update_alpha_strategy}')
                     else:
@@ -246,20 +236,34 @@ class Solver:
                             self.first = False
                         if self.bak > 0:
                             alpha *= self.zeta
+                iteration += 1
+                x = xtrial
+                fvalx = fval_xtrial
+                rvalx = rval_xtrial
+                Fvalx = fvalx + rvalx
+                gradfx = self.prob.gradf(x)
+                gevals += 1
             else:
                 # test L
+                opt_3_stay = False
                 diff = xtrial - x
                 if fval_xtrial - fvalx > np.sum(gradfx * diff) + 1/(2*alpha) * np.sum(diff * diff):
-                    # print("3:decrease!")
+                    opt_3_stay = True
                     alpha *= self.zeta
-            # perform update
-            iteration += 1
-            x = xtrial
-            fvalx = fval_xtrial
-            rvalx = rval_xtrial
-            Fvalx = fvalx + rvalx
-            gradfx = self.prob.gradf(x)
-            gevals += 1
+                if opt_3_stay:
+                    iteration += 1
+                    x = x
+                    gradfx = self.prob.gradf(x)
+                    gevals += 1
+                else:
+                    # perform update
+                    iteration += 1
+                    x = xtrial
+                    fvalx = fval_xtrial
+                    rvalx = rval_xtrial
+                    Fvalx = fvalx + rvalx
+                    gradfx = self.prob.gradf(x)
+                    gevals += 1
             if explore:
                 Fseq.append(Fvalx)
 
