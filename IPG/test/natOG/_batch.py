@@ -27,6 +27,7 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
     params['projectedGD']['stepsize'] = 1.0
     print("Working on: {}... | inexact_type: {}".format(datasetName, inexact_type), flush=True)
     print(f"Initial stepsize:{params['projectedGD']['stepsize']}", flush=True)
+    print(dbDir)
     fileType = fileTypeDict[datasetName]
     try:
         X, y = utils.set_up_xy(datasetName, fileType, dbDir)
@@ -79,7 +80,9 @@ def runall(date, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio
         directory += f"_{params['gamma2']}_{params['nu']}"
     else:
         directory += f"_{params['delta']}_{params['schimdt_const']}"
-
+    if params['ckpt']:
+        probSetAttr = {'date':date, 'loss':loss, 'lambda_shrinkage':lambda_shrinkage, 'group_size':group_size, 'overlap_ratio':overlap_ratio}
+        params['probSetAttr'] = probSetAttr
     if not os.path.exists(directory):
         os.makedirs(directory)
     for datasetName in datasets:

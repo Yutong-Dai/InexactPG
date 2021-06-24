@@ -34,6 +34,8 @@ params['nu'] = 0.5
 # parameters for schimdt method
 params['delta'] = 3  # 1e-3
 params['schimdt_const'] = 1  # c/k^3
+params['ckpt'] = False
+params['ckpt_tol'] = 1e-4
 
 # if True, then the stepsize alphak of Latent
 # overlapping group l1 will be scaled to the

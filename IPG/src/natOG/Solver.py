@@ -12,7 +12,7 @@ import numpy as np
 import time
 import src.utils as utils
 import src.natOG.printUtils as printUtils
-
+import os
 
 class Solver:
     def __init__(self, prob, params):
@@ -92,6 +92,16 @@ class Solver:
         if not alpha:
             # alpha = self._set_init_alpha(x)
             alpha = 1.0
+        if self.params['ckpt']:
+            self.ckpt_dir = f"../log/{self.params['probSetAttr']['date']}/{self.params['inexact_type']}/{self.params['probSetAttr']['loss']}_ckpt/"
+            self.ckpt_dir += f"{self.params['subsolver']}_{self.params['warm_start']}_{self.params['probSetAttr']['lambda_shrinkage']}"
+            self.ckpt_dir += f"_{self.params['probSetAttr']['group_size']}_{self.params['probSetAttr']['overlap_ratio']}"
+            if not os.path.exists(self.ckpt_dir):
+                os.makedirs(self.ckpt_dir)
+            self.datasetname_ = self.prob.f.datasetName.split("/")[-1]
+            self.datasetid = "{}_{}_{}_{}".format(self.datasetname_, self.params['probSetAttr']['lambda_shrinkage'], 
+                                                               self.params['probSetAttr']['group_size'], 
+                                                               self.params['probSetAttr']['overlap_ratio'])
 
         # print algorithm params
         outID = self.prob.f.datasetName
@@ -191,6 +201,17 @@ class Solver:
                 break
             if self.status == -2:
                 break
+            if self.params['ckpt']:
+                if aprox_optim <= self.params['ckpt_tol']:
+                    info = {'X': x, 'iteration': iteration, 'time': time_so_far, 'F': Fvalx,
+                            'nz': nz, 'nnz': nnz, 'status': self.status,
+                            'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
+                            'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
+                            'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv,
+                            'subfevals':subfevals, 'subgevals':subgevals}
+                    info['datasetid'] = self.datasetid
+                    info_name = self.ckpt_dir + "/{}_info.npy".format(self.datasetname_)
+                    np.save(info_name, info)
 
             iteration_start = time.time()
             # linesearch
