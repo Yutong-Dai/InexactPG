@@ -41,7 +41,7 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
         starts, ends = generator.get_group()
         # calculate lammax and Lipschitz constants
         lammax_path = f'{dbDir}/lammax-{datasetName}-{group_size}-{overlap_ratio}.mat'
-        Lip_path = f'{dbDir}/Lip-{datasetName}.mat'
+        # Lip_path = f'{dbDir}/Lip-{datasetName}.mat'
         if os.path.exists(lammax_path):
             lammax = loadmat(lammax_path)["lammax"][0][0]
             print(f"loading lammax from: {lammax_path}")
@@ -79,7 +79,18 @@ def runall(date, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio
         directory += f"_{params['gamma2']}_{params['nu']}"
     else:
         directory += f"_{params['delta']}_{params['schimdt_const']}"
-
+    if params['ckpt']:
+        probSetAttr = {'date':date, 'loss':loss, 'lambda_shrinkage':lambda_shrinkage, 'group_size':group_size, 'overlap_ratio':overlap_ratio}
+        if inexact_type == 1:
+            probSetAttr['param1'] = params['gamma1']
+            probSetAttr['param2'] = 'empty'
+        elif inexact_type == 2:
+            probSetAttr['param1'] = params['gamma2']
+            probSetAttr['param2'] = params['nu']
+        else:
+            probSetAttr['param1'] = params['delta']
+            probSetAttr['param2'] = params['schimdt_const']
+        params['probSetAttr'] = probSetAttr
     if not os.path.exists(directory):
         os.makedirs(directory)
     for datasetName in datasets:

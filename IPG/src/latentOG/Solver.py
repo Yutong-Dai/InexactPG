@@ -12,14 +12,14 @@ import numpy as np
 import time
 import src.utils as utils
 import src.latentOG.printUtils as printUtils
-
+import os
 
 class Solver:
     def __init__(self, prob, params):
         self.prob = prob
         self.__dict__.update(params)
         self.params = params
-        self.version = "0.2 (2021-06-12) latentOG"
+        self.version = "0.2 (2021-06-28) latentOG"
 
     def solve(self, x=None, alpha=None, explore=True):
         if x is None:
@@ -41,7 +41,17 @@ class Solver:
                     # such that alpha = 1/L
                 if self.params['inexact_type'] == 2:
                     alpha = (1 - self.params['eta']) * alpha
-
+        if self.params['ckpt']:
+            self.ckpt_dir = f"../log/{self.params['probSetAttr']['date']}/{self.params['inexact_type']}/{self.params['probSetAttr']['loss']}_ckpt/"
+            self.ckpt_dir += f"{self.params['subsolver']}_{self.params['warm_start']}_{self.params['probSetAttr']['lambda_shrinkage']}"
+            self.ckpt_dir += f"_{self.params['probSetAttr']['group_size']}_{self.params['probSetAttr']['overlap_ratio']}"
+            self.ckpt_dir += f"_{self.params['probSetAttr']['param1']}_{self.params['probSetAttr']['param2']}"
+            if not os.path.exists(self.ckpt_dir):
+                os.makedirs(self.ckpt_dir)
+            self.datasetname_ = self.prob.f.datasetName.split("/")[-1]
+            self.datasetid = "{}_{}_{}_{}".format(self.datasetname_, self.params['probSetAttr']['lambda_shrinkage'], 
+                                                               self.params['probSetAttr']['group_size'], 
+                                                               self.params['probSetAttr']['overlap_ratio'])
         # print algorithm params
         outID = self.prob.f.datasetName
         problem_attribute = self.prob.f.__str__()
@@ -132,6 +142,17 @@ class Solver:
                 break
             if self.status == -2:
                 break
+            if self.params['ckpt']:
+                if aprox_optim <= self.params['ckpt_tol']:
+                    info = {'X': x, 'iteration': iteration, 'time': time_so_far, 'F': fvalx,
+                            'nz': nz, 'nnz': nnz, 'status': 0,
+                            'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
+                            'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
+                            'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv,
+                            'subfevals':subfevals, 'subgevals':subgevals}
+                    info['datasetid'] = self.datasetid
+                    info_name = self.ckpt_dir + "/{}_info.npy".format(self.datasetname_)
+                    np.save(info_name, info)
 
             iteration_start = time.time()
             # fake linsearch
@@ -155,7 +176,7 @@ class Solver:
             fevals += 1
             gevals += 1
             # boost numerical performance if beta > 1
-            alpha *= self.beta
+            # alpha *= self.beta
             # if iteration % 100 == 0:
             #     alpha *= 0.5
 

@@ -96,6 +96,7 @@ class Solver:
             self.ckpt_dir = f"../log/{self.params['probSetAttr']['date']}/{self.params['inexact_type']}/{self.params['probSetAttr']['loss']}_ckpt/"
             self.ckpt_dir += f"{self.params['subsolver']}_{self.params['warm_start']}_{self.params['probSetAttr']['lambda_shrinkage']}"
             self.ckpt_dir += f"_{self.params['probSetAttr']['group_size']}_{self.params['probSetAttr']['overlap_ratio']}"
+            self.ckpt_dir += f"_{self.params['probSetAttr']['param1']}_{self.params['probSetAttr']['param2']}"
             if not os.path.exists(self.ckpt_dir):
                 os.makedirs(self.ckpt_dir)
             self.datasetname_ = self.prob.f.datasetName.split("/")[-1]
@@ -204,7 +205,7 @@ class Solver:
             if self.params['ckpt']:
                 if aprox_optim <= self.params['ckpt_tol']:
                     info = {'X': x, 'iteration': iteration, 'time': time_so_far, 'F': Fvalx,
-                            'nz': nz, 'nnz': nnz, 'status': self.status,
+                            'nz': nz, 'nnz': nnz, 'status': 0,
                             'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
                             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
                             'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv,
