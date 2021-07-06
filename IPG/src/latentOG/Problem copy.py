@@ -15,7 +15,7 @@ from numba import jit
 import src.utils as utils
 from numpy.linalg import pinv
 import src.latentOG.printUtils as printUtils
-from scipy.sparse import csc_matrix
+
 
 class Problem(ABC):
     def __init__(self, f, r) -> None:
@@ -124,15 +124,10 @@ class ProbLatentOG(Problem):
             flag = 'exactsol'
             gap = epsilon = 0.0
             return x, lambda_full, flag, iters, gap, epsilon
-        # I = np.zeros((self.p, GA))
+        I = np.zeros((self.p, GA))
         # set up the indicator functio 1{j\in g}
-        # for j in range(GA):
-        #     I[starts[j]:ends[j], j] = 1
-        data, indices, indptr = create_I(starts, ends, GA)
-        I = csc_matrix((data, indices, indptr), shape=(self.p, GA))
-        # I_sparse = csc_matrix((data, indices, indptr), shape=(self.p, GA))
-        # print("True I - Sparse I:")
-        # print(np.sum(I - I_sparse.toarray()))
+        for j in range(GA):
+            I[starts[j]:ends[j], j] = 1
         # ---------------------------- Projected GD ---------------------------------
         while True:
             iters += 1
@@ -429,17 +424,3 @@ class ProbLatentOG(Problem):
         dual = utils.l2_norm(uk)**2 - np.sum(weights_proj_grp**2 * lambda_working) - np.sum((uk**2 / (1 + s_working)))
         gap = primal - dual
         return primal, dual, gap
-
-# @jit(nopython=True,cache=True)
-def create_I(starts, ends, GA):
-    indices = []
-    indptr = [0]
-    num_elements = 0
-    for j in range(GA):
-        num_elements +=  ends[j] - starts[j]
-        indices += list(range(starts[j],ends[j]))
-        indptr.append(num_elements)
-    indices = np.array(indices)
-    indptr = np.array(indptr)
-    data = np.ones_like(indices)
-    return data, indices, indptr

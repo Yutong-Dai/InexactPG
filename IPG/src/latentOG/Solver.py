@@ -21,15 +21,12 @@ class Solver:
         self.params = params
         self.version = "0.2 (2021-06-28) latentOG"
 
-    def solve(self, x=None, alpha=None, explore=True):
+    def solve(self, x=None, alpha=None, explore=True, provide_L=False):
         if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
-            alpha = 1.0
-            provide_L = False
-        else:
-            # assume alpha = 1/L
-            provide_L = True
+            alpha = 10.0
+
         if self.params['scale_alpha']:
             alpha = (1 - self.params['eta']) * alpha
             if self.params['inexact_type'] == 1:
@@ -142,17 +139,6 @@ class Solver:
                 break
             if self.status == -2:
                 break
-            if self.params['ckpt']:
-                if aprox_optim <= self.params['ckpt_tol']:
-                    info = {'X': x, 'iteration': iteration, 'time': time_so_far, 'F': fvalx,
-                            'nz': nz, 'nnz': nnz, 'status': 0,
-                            'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
-                            'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
-                            'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv,
-                            'subfevals':subfevals, 'subgevals':subgevals}
-                    info['datasetid'] = self.datasetid
-                    info_name = self.ckpt_dir + "/{}_info.npy".format(self.datasetname_)
-                    np.save(info_name, info)
 
             iteration_start = time.time()
             # fake linsearch
@@ -175,10 +161,20 @@ class Solver:
             gradfx = self.prob.gradf(x)
             fevals += 1
             gevals += 1
-            # boost numerical performance if beta > 1
-            # alpha *= self.beta
-            # if iteration % 100 == 0:
-            #     alpha *= 0.5
+            if self.params['ckpt']:
+                if aprox_optim <= self.params['ckpt_tol'] or iteration == 1:
+                    info = {'X': x, 'iteration': iteration, 'time': time_so_far, 'F': fvalx,
+                            'nz': nz, 'nnz': nnz, 'status': 0,
+                            'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
+                            'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
+                            'K': self.prob.K, 'subits': subits, 'subits_equiv':subits_equiv,
+                            'subfevals':subfevals, 'subgevals':subgevals}
+                    if iteration == 1:
+                        info['X'] = None
+                        info['status'] = 2
+                    info['datasetid'] = self.datasetid
+                    info_name = self.ckpt_dir + "/{}_info.npy".format(self.datasetname_)
+                    np.save(info_name, info)
 
         info = {
             'X': x, 'iteration': iteration, 'time': time_so_far, 'f': fvalx,

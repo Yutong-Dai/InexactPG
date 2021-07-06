@@ -61,7 +61,7 @@ from src.latentOG.Solver import Solver
 
 
 loss = 'logit'
-datasetName = 'madelon'
+datasetName = 'a9a'
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
 X, y = utils.set_up_xy(datasetName, fileType, dbDir='../../../../GroupFaRSA/db')
@@ -95,10 +95,10 @@ params['nu'] = 0.9
 params['inexact_type'] = 2
 params['warm_start'] = True
 params['subsolver'] = 'projectedGD'
-params['subsolver_verbose'] = True
+params['subsolver_verbose'] = False
 params['projectedGD']['stepsize'] = 1.0
 solver = Solver(prob, params)
-info = solver.solve(alpha=1 / L, explore=True)
+info = solver.solve(alpha=10, explore=True)
 print(f"time:{info['time']:3.3e} | iters:{info['iteration']} | subiters:{info['subits']} | nnz:{info['nnz']} | nz:{info['nz']}")
 
 

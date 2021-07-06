@@ -41,8 +41,9 @@ def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', '
     try:
         df = pd.DataFrame(info_lst)[cols]
     except KeyError:
-        cols[cols.index('F')] = 'f'
-        df = pd.DataFrame(info_lst)[cols]
+        cols_ = cols.copy()
+        cols_[cols_.index('F')] = 'f'
+        df = pd.DataFrame(info_lst)[cols_]
     # summarize status
     codes = df['status'].unique()
     formatter = f'{len(str(df.shape[0]))}d'

@@ -203,7 +203,7 @@ class Solver:
             if self.status == -2:
                 break
             if self.params['ckpt']:
-                if aprox_optim <= self.params['ckpt_tol']:
+                if aprox_optim <= self.params['ckpt_tol'] or iteration == 1:
                     info = {'X': x, 'iteration': iteration, 'time': time_so_far, 'F': Fvalx,
                             'nz': nz, 'nnz': nnz, 'status': 0,
                             'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,

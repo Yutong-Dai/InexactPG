@@ -47,7 +47,7 @@ params['delta'] = args.delta
 params['schimdt_const'] = args.schimdt_const
 params['subsolver_verbose'] = False
 params['scale_alpha'] = False
-params['ckpt_tol'] = 1e-4
+params['ckpt_tol'] = 5 * 1e-4
 params['ckpt'] = True
 
 
@@ -56,7 +56,7 @@ if args.loss == 'logit':
         datasets = ["a9a", "colon_cancer", "duke","gisette"
                     "leu", "madelon", "mushrooms", "w8a"]
     else:
-        datasets = ["rcv1", "real-sim", "news20"]
+        datasets = ["news20", "rcv1", "real-sim"]
 else:
     datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                 'housing_scale', 'pyrim_scale', 'YearPredictionMSD',
