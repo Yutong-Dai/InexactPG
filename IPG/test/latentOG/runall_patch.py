@@ -18,13 +18,13 @@ from _batch import runall
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth testing.')
-parser.add_argument('--date', default='06_28_2021', type=str, help='experiment date')
+parser.add_argument('--date', default='07_10_2021', type=str, help='experiment date')
 parser.add_argument('--loss', default='logit', type=str, help='ls/logit')
 parser.add_argument('--lam_shrink', default=0.1, type=float, help='lambda shrink parameters')
 parser.add_argument('--group_size', default=10, type=int, help='number of variables per group')
 parser.add_argument('--overlap_ratio', default=0.1, type=float, help='overlap ratio for each groups')
 parser.add_argument('--tol', default=1e-5, type=float, help='desired accuracy')
-parser.add_argument('--max_time', default=12*3600, type=int, help='max time in seconds')
+parser.add_argument('--max_time', default=7200, type=int, help='max time in seconds')
 parser.add_argument('--inexact_type', default=1, type=int, help='1/2/3')
 parser.add_argument('--subsolver', default='projectedGD', type=str, help='desired accuracy')
 parser.add_argument('--warm_start', default=True, type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help='warm start for subsolver')
@@ -47,16 +47,16 @@ params['delta'] = args.delta
 params['schimdt_const'] = args.schimdt_const
 params['subsolver_verbose'] = False
 params['scale_alpha'] = False
-params['ckpt_tol'] = 5 * 1e-4
+params['ckpt_tol'] = 1e-4
 params['ckpt'] = True
 
 
 if args.loss == 'logit':
     if not args.largedb:
-        datasets = ["a9a", "colon_cancer", "duke","gisette"
-                    "leu", "madelon", "mushrooms", "w8a"]
+        datasets = ["a9a", "colon_cancer", "duke",
+                    "leu", "mushrooms", "w8a"]
     else:
-        datasets = ["news20", "rcv1", "real-sim"]
+        datasets = ["news20", "rcv1", "real-sim", "gisette", "madelon"]
 else:
     datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                 'housing_scale', 'pyrim_scale', 'YearPredictionMSD',
@@ -65,4 +65,4 @@ else:
 # runall(args.date, 'naive', args.loss, args.lam_shrink, percent, datasets, params, dbDir='../../../db')
 # polyps run
 runall(args.date, args.inexact_type, args.loss, args.lam_shrink, args.group_size, args.overlap_ratio,
-       datasets, params, dbDir='../../../../GroupFaRSA/db_big')
+       datasets, params, dbDir='../../../../GroupFaRSA/db')

@@ -28,9 +28,17 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
     print("Working on: {}... | inexact_type: {}".format(datasetName, inexact_type), flush=True)
     print(f"Initial stepsize:{params['projectedGD']['stepsize']}", flush=True)
     fileType = fileTypeDict[datasetName]
+    FileExist=True
     try:
         X, y = utils.set_up_xy(datasetName, fileType, dbDir)
-
+    except FileNotFoundError:
+        dbDir += '_big'
+        try:
+            X, y = utils.set_up_xy(datasetName, fileType, dbDir)
+        except FileNotFoundError:
+            print(f"{datasetName} is not found. Skip!")
+            FileExist = False    
+    if FileExist:
         if loss == 'logit':
             f = LogisticLoss(X, y, log_path)
         elif loss == 'ls':
@@ -66,8 +74,6 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
         info['datasetid'] = datasetid
         info_name = directory + "/{}_info.npy".format(datasetName)
         np.save(info_name, info)
-    except FileNotFoundError:
-        print(f"{datasetName} is not found. Skip!")
 
 
 def runall(date, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio, datasets, params, dbDir='../../../db'):

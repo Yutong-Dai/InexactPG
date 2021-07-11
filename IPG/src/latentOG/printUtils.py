@@ -185,7 +185,7 @@ def print_result(info, outID=None):
     contents += 'CPU seconds:{:.>64}{:.4f}\n'.format("", info['time'])
     if info['nz'] is not None:
         contents += 'number of sparse groups:{:.>52}{:d}\n'.format("", info['nz'])
-        contents += 'Objective function(f):{:.>54}{:8.6e}\n'.format("", info['f'])
+        contents += 'Objective function(f):{:.>54}{:8.6e}\n'.format("", info['F'])
         contents += 'Optimality error:{:.>59}{:8.6e}\n'.format("", info['optim'])
     contents += 'Function evaluations:{:.>55}{:d}\n'.format("", info['fevals'])
     contents += 'Gradient evaluations:{:.>55}{:d}\n'.format("", info['gevals'])

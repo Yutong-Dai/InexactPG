@@ -25,7 +25,7 @@ class Solver:
         if x is None:
             x = np.zeros((self.prob.p, 1))
         if not alpha:
-            alpha = 10.0
+            alpha = 2.0
 
         if self.params['scale_alpha']:
             alpha = (1 - self.params['eta']) * alpha
@@ -150,14 +150,20 @@ class Solver:
             print_cost = time.time() - temp
             # update proximal gradient stepsize
             if not provide_L:
+                stay = False
                 diff = xtrial - x
                 if fval_xtrial - fvalx > np.sum(gradfx * diff) + 1/(2*alpha) * np.sum(diff * diff):
                     alpha *= self.zeta
+                    stay = True
 
             # perform update
             iteration += 1
-            x = xtrial
-            fvalx = fval_xtrial
+            if stay:
+                x = x
+                gradfx = self.prob.gradf(x)
+            else:
+                x = xtrial
+                fvalx = fval_xtrial
             gradfx = self.prob.gradf(x)
             fevals += 1
             gevals += 1
@@ -177,7 +183,7 @@ class Solver:
                     np.save(info_name, info)
 
         info = {
-            'X': x, 'iteration': iteration, 'time': time_so_far, 'f': fvalx,
+            'X': x, 'iteration': iteration, 'time': time_so_far, 'F': fvalx,
             'nz': nz, 'nnz': nnz, 'status': self.status,
             'fevals': fevals, 'gevals': gevals, 'optim': aprox_optim,
             'n': self.prob.n, 'p': self.prob.p, 'Lambda': self.prob.r.Lambda,
