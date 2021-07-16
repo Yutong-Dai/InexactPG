@@ -20,7 +20,7 @@ from src.regularizer import natOG
 from src.lossfunction import LogisticLoss, LeastSquares
 from src.natOG.Problem import ProbNatOG
 from src.natOG.Solver import Solver
-
+from src.natOG.SolverLee import Solver as SolverLee
 
 def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio, datasetName, params, dbDir='../../../db'):
     log_path = directory + "/{}".format(datasetName)
@@ -68,7 +68,10 @@ def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, o
         r = natOG(Lambda=lammax * lambda_shrinkage, dim=p, starts=starts, ends=ends)
         r.createYStartsEnds()
         prob = ProbNatOG(f, r)
-        solver = Solver(prob, params)
+        if params['inexact_type'] != 4:
+            solver = Solver(prob, params)
+        else:
+            solver = SolverLee(prob, params)
         info = solver.solve(alpha=1, explore=False)
         datasetid = "{}_{}_{}_{}".format(datasetName, lambda_shrinkage, group_size, overlap_ratio)
         info['datasetid'] = datasetid
@@ -82,6 +85,8 @@ def runall(date, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio
         directory += f"_{params['gamma1']}_empty"
     elif inexact_type == 2:
         directory += f"_{params['gamma2']}_{params['nu']}"
+    elif inexact_type == 4:
+        directory += f"_{params['gamma4']}_{params['nu']}"
     else:
         directory += f"_{params['delta']}_{params['schimdt_const']}"
     if params['ckpt']:
@@ -91,6 +96,9 @@ def runall(date, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio
             probSetAttr['param2'] = 'empty'
         elif inexact_type == 2:
             probSetAttr['param1'] = params['gamma2']
+            probSetAttr['param2'] = params['nu']
+        elif inexact_type == 4:
+            probSetAttr['param1'] = params['gamma4']
             probSetAttr['param2'] = params['nu']
         else:
             probSetAttr['param1'] = params['delta']
