@@ -208,6 +208,11 @@ class ProbLatentOG(Problem):
                 epsilon = params['schimdt_const'] / (outter_iter ** params['delta'])
                 bb = utils.l2_norm(x - uk) / alphak + self.M
                 aa = 0.5 / alphak
+            elif params['inexact_type'] == 4:
+                sk = x - xk
+                epsilon = (1 - params['nu']) * params['gamma4'] * (np.dot(sk.T, sk)[0][0]) / (2 * alphak)
+                bb = utils.l2_norm(x - uk) / alphak + self.M
+                aa = (1 - (1 - 1 / params['nu']) * params['gamma4']) / (2 * alphak)
             else:
                 raise ValueError("not implemeted!")
             theta = (-bb + np.sqrt(bb**2 + 4 * aa * epsilon)) / (2 * aa)

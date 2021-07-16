@@ -58,11 +58,13 @@ def print_algorithm(algodic, outID=None):
         contents += f" update strategy:{algodic['update_alpha_strategy']} | scale alpha for comparsion:{algodic['scale_alpha']}\n"
         contents += f"Inexact Strategy:\n"
         if algodic['inexact_type'] == 1:
-            contents += f" inexact type:{algodic['inexact_type']} | gamma1:{algodic['gamma1']}\n"
+            contents += f" inexact type:{algodic['inexact_type']} | gamma1:{algodic['gamma1']:1.0e}\n"
         elif algodic['inexact_type'] == 2:
-            contents += f" inexact type:{algodic['inexact_type']} | gamma2:{algodic['gamma2']} | nu:{algodic['nu']}\n"
-        else:
+            contents += f" inexact type:{algodic['inexact_type']} | gamma2:{algodic['gamma2']:1.0e} | nu:{algodic['nu']}\n"
+        elif algodic['inexact_type'] == 3:
             contents += f" inexact type:{algodic['inexact_type']} | delta:{algodic['delta']} | schimdt_const:{algodic['schimdt_const']}\n"
+        else:
+            contents += f" inexact type:{algodic['inexact_type']} | gamma4:{algodic['gamma4']:1.0e} | nu:{algodic['nu']}\n"
         contents += f"Subsolver configuration:\n"
         contents += f" solver:{algodic['subsolver']} | warm start:{algodic['warm_start']} | verbose:{algodic['subsolver_verbose']} | maxiter:{algodic[algodic['subsolver']]['maxiter']}"
         if algodic['subsolver'] == 'projectedGD':
@@ -95,7 +97,7 @@ def print_header_lee(outID=None):
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    column_titles = '  Iter      F    |   alpha     dim   subits     flag        gap       epsilon   theta     aprox-optim   #z   #nz  |  bak   |d|   |\n'
+    column_titles = '  Iter      F    |   alpha     dim   subits     flag        gap       epsilon   theta     aprox-optim   #z   #nz  |  bak     |d|    |\n'
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
 

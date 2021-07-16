@@ -61,8 +61,10 @@ def print_algorithm(algodic, outID=None):
             contents += f" inexact type:{algodic['inexact_type']} | gamma1:{algodic['gamma1']}\n"
         elif algodic['inexact_type'] == 2:
             contents += f" inexact type:{algodic['inexact_type']} | gamma2:{algodic['gamma2']} | nu:{algodic['nu']}\n"
-        else:
+        elif algodic['inexact_type'] == 3:
             contents += f" inexact type:{algodic['inexact_type']} | delta:{algodic['delta']} | schimdt_const:{algodic['schimdt_const']}\n"
+        else:
+            contents += f" inexact type:{algodic['inexact_type']} | gamma4:{algodic['gamma4']:1.0e} | nu:{algodic['nu']}\n"
         contents += f"Subsolver configuration:\n"
         contents += f" solver:{algodic['subsolver']} | warm start:{algodic['warm_start']} | verbose:{algodic['subsolver_verbose']} | maxiter:{algodic[algodic['subsolver']]['maxiter']}"
         if algodic['subsolver'] == 'projectedDG':
@@ -86,10 +88,18 @@ def print_header(outID=None):
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    column_titles = '  Iter      f    |   alpha     dim   subits     flag        gap       epsilon   theta    proj  aprox-optim   #z   #nz  |\n'
+    column_titles = '  Iter      f    |   alpha     dim   subits     flag        gap       epsilon   theta    proj  aprox-optim   #z    #nz  |\n'
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
 
+def print_header_lee(outID=None):
+    if outID is not None:
+        filename = '{}.txt'.format(outID)
+    else:
+        filename = 'log.txt'
+    column_titles = '  Iter      f    |   alpha     dim   subits     flag        gap       epsilon   theta    proj  aprox-optim   #z    #nz  | bak |\n'
+    with open(filename, "a") as logfile:
+        logfile.write(column_titles)
 
 def print_iterates(iteration, F, outID=None):
     if outID is not None:
@@ -125,6 +135,17 @@ def print_proximal_update(alpha, dim, subits, flag, gap, epsilon, theta, project
     with open(filename, "a") as logfile:
         logfile.write(contents)
 
+def print_proximal_update_lee(alpha, dim, subits, flag, gap, epsilon, theta, projection, aprox_optim, nz, nnz, outID=None):
+    """
+        projection: number of correction two feasibility performed
+    """
+    if outID is not None:
+        filename = '{}.txt'.format(outID)
+    else:
+        filename = 'log.txt'
+    contents = f" {alpha:2.3e} {dim:5d}    {subits:4d}    {flag}  {gap:+2.3e}  {epsilon:2.3e} {theta:2.3e}  {projection:4d}   {aprox_optim:2.3e}  {nz:4d} {nnz:5d}  |"
+    with open(filename, "a") as logfile:
+        logfile.write(contents)
 
 def print_proximal_update_failed(alpha, dim, subits, flag, outID=None):
     if outID is not None:
@@ -136,13 +157,13 @@ def print_proximal_update_failed(alpha, dim, subits, flag, outID=None):
         logfile.write(contents)
 
 
-def print_linesearch(d_norm, bak, stepsize, outID=None):
+def print_linesearch_lee(bak, outID=None):
     # d_norm is the 2-norm of the search direction
     if outID is not None:
         filename = '{}.txt'.format(outID)
     else:
         filename = 'log.txt'
-    contents = f" {bak:3d}   {stepsize:2.3e} {d_norm:2.3e} |\n"
+    contents = f" {bak:3d} |\n"
     with open(filename, "a") as logfile:
         logfile.write(contents)
 
