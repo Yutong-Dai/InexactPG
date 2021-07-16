@@ -55,7 +55,7 @@ if args.loss == 'logit':
         datasets = ["a9a", "colon_cancer", "duke",
                     "leu", "mushrooms", "w8a"]
     else:
-        datasets = ["rcv1", "real-sim", "news20", "gisette", "madelon"]
+        datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
 else:
     datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                 'housing_scale', 'pyrim_scale', 'YearPredictionMSD',

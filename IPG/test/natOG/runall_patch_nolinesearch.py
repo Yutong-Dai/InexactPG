@@ -14,11 +14,11 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 
 import argparse
 from src.params import params
-from _batch import runall
+from _batch_nolinesearch import runall
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth testing.')
-parser.add_argument('--date', default='07_14_2021', type=str, help='experiment date')
+parser.add_argument('--date', default='07_09_2021', type=str, help='experiment date')
 parser.add_argument('--loss', default='logit', type=str, help='ls/logit')
 parser.add_argument('--lam_shrink', default=0.1, type=float, help='lambda shrink parameters')
 parser.add_argument('--group_size', default=10, type=int, help='number of variables per group')
@@ -50,19 +50,22 @@ params['scale_alpha'] = False
 params['ckpt_tol'] = 1e-4
 params['ckpt'] = True
 
-
 if args.loss == 'logit':
     if not args.largedb:
         datasets = ["a9a", "colon_cancer", "duke",
                     "leu", "mushrooms", "w8a"]
     else:
-        datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
+        datasets = ["rcv1", "real-sim", "news20", "gisette", "madelon"]
 else:
     datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                 'housing_scale', 'pyrim_scale', 'YearPredictionMSD',
-                'triazines_scale', 'virusShare']        
+                'triazines_scale', 'virusShare']
+
 # local run
 # runall(args.date, 'naive', args.loss, args.lam_shrink, percent, datasets, params, dbDir='../../../db')
 # polyps run
 runall(args.date, args.inexact_type, args.loss, args.lam_shrink, args.group_size, args.overlap_ratio,
        datasets, params, dbDir='../../../../GroupFaRSA/db')
+
+# print(params['max_time'])
+# print(datasets)

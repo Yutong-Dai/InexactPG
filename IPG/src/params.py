@@ -27,9 +27,10 @@ params['zeta'] = 0.8
 params['beta'] = 1  # 1 / 0.9
 params['update_alpha_strategy'] = 'model'  # model / none /frac 
 params['optimality_measure'] = 'aprox'  # iterates
-params['inexact_type'] = 1  # 1:mine 2: Lee-like 3:schimdt
+params['inexact_type'] = 1  # 1:mine 2: Lee-like 3:schimdt 4:lee
 params['gamma1'] = 1e-12
 params['gamma2'] = 1e-12
+params['gamma4'] = 1-1e-12
 params['nu'] = 0.5
 # parameters for schimdt method
 params['delta'] = 3  # 1e-3

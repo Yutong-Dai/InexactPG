@@ -10,3 +10,5 @@ SLEP_package_4.1/Examples/*
 SLEP_package_4.1/Data/*
 IPG/src/natOG/__pycache__/*
 IPG/src/__pycache__/*
+IPG/test/pbs/latentOG/*.pbs
+IPG/test/pbs/natOG/*.pbs

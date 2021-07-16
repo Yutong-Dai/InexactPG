@@ -90,6 +90,16 @@ def print_header(outID=None):
     with open(filename, "a") as logfile:
         logfile.write(column_titles)
 
+def print_header_lee(outID=None):
+    if outID is not None:
+        filename = '{}.txt'.format(outID)
+    else:
+        filename = 'log.txt'
+    column_titles = '  Iter      F    |   alpha     dim   subits     flag        gap       epsilon   theta     aprox-optim   #z   #nz  |  bak   |d|   |\n'
+    with open(filename, "a") as logfile:
+        logfile.write(column_titles)
+
+
 def print_iterates(iteration, F, outID=None):
     if outID is not None:
         filename = '{}.txt'.format(outID)
@@ -146,6 +156,15 @@ def print_linesearch(d_norm, bak, stepsize, outID=None):
     with open(filename, "a") as logfile:
         logfile.write(contents)
 
+def print_linesearch_lee(d_norm, bak, outID=None):
+    # d_norm is the 2-norm of the search direction
+    if outID is not None:
+        filename = '{}.txt'.format(outID)
+    else:
+        filename = 'log.txt'
+    contents = f" {bak:3d}   {d_norm:2.3e} |\n"
+    with open(filename, "a") as logfile:
+        logfile.write(contents)
 
 def print_exit(status, outID=None):
     if outID is not None:

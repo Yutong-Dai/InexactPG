@@ -215,6 +215,11 @@ class ProbNatOG(Problem):
                 epsilon = params['schimdt_const'] / (outter_iter ** params['delta'])
                 bb = utils.l2_norm(xkplus1 - uk) + alphak * self.M 
                 aa = 0.5
+            elif params['inexact_type'] == 4:
+                sk = xkplus1 - xk
+                epsilon = (1 - params['nu']) * params['gamma4'] * (np.dot(sk.T, sk)[0][0]) / 2
+                bb = utils.l2_norm(xkplus1 - uk) + alphak * self.M 
+                aa = (1 - (1 - 1 / params['nu']) * params['gamma4']) / 2
             else:
                 raise ValueError(f" inextact_type:{params['inexact_type']} is not implemeted!")
  
@@ -223,7 +228,6 @@ class ProbNatOG(Problem):
             fdualY = fdualYtrial
             iters += 1
             theta = (-bb + np.sqrt(bb**2 + 4 * aa * epsilon)) / (2 * aa)
-            # theta_s = 0.5*(theta**2)
             theta_s = 0.5*(theta)
             # if theta_s > epsilon:
             #     print(f"outter_iter:{outter_iter:5d} | inner_iter:{iters:5d} | theta_s <= epsilon:{0.5*(theta**2) <= epsilon}")
