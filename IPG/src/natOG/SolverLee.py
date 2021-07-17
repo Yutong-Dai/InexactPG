@@ -78,7 +78,7 @@ class Solver:
         subgevals = 0
         # count subsits in full dualDim computation
         subits_equiv = 0
-        # consequtive_no_bak = 0
+        total_count_fallbak = self.params['fallback']
         while True:
             print_start = time.time()
             if self.printlevel > 0:
@@ -169,6 +169,29 @@ class Solver:
             if self.printlevel > 0:
                 printUtils.print_linesearch_lee(self.d_norm, self.bak, outID)
             print_cost = time.time() - temp
+            
+            if total_count_fallbak == 0:
+                self.fall_back = True
+
+            if not self.fall_back:
+                total_count_fallbak -= 1
+                if self.update_alpha_strategy == 'frac':
+                    if self.bak > 0:
+                        alpha *= self.zeta
+                elif self.update_alpha_strategy == 'model':
+                    if flag == 'desired_':
+                        d = xtrial - x
+                        d_norm_sq = utils.l2_norm(d) ** 2
+                        dirder = np.dot(gradfx.T, d)[0][0]
+                        actual_decrease = fval_xtrial - fvalx
+                        L_local = 2 * (actual_decrease - dirder) / d_norm_sq
+                        alpha = min(max(1 / max(L_local, 1e-3), alpha * self.zeta), 10)
+                else:
+                    alpha *= self.zeta
+            else:
+                if self.first:
+                    alpha = 1.0
+                    self.first = False
 
             # perform update
             iteration += 1

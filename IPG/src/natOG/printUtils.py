@@ -55,7 +55,7 @@ def print_algorithm(algodic, outID=None):
         contents += 'Lineserch Parameters:\n'
         contents += f" eta:{algodic['eta']} | xi:{algodic['xi']} | zeta:{algodic['zeta']} | maxbak:{algodic['max_back']}\n"
         contents += 'Proximal Stepsize update:\n'
-        contents += f" update strategy:{algodic['update_alpha_strategy']} | scale alpha for comparsion:{algodic['scale_alpha']}\n"
+        contents += f" update strategy:{algodic['update_alpha_strategy']} | scale alpha for comparsion:{algodic['scale_alpha']} | Fallback:{algodic['fallback']}\n"
         contents += f"Inexact Strategy:\n"
         if algodic['inexact_type'] == 1:
             contents += f" inexact type:{algodic['inexact_type']} | gamma1:{algodic['gamma1']:1.0e}\n"
