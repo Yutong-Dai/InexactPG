@@ -53,7 +53,7 @@ params['projectedNewton']['maxiter'] = 100
 params['projectedGD'] = {}
 params['projectedGD']['maxiter'] = 100
 params['projectedGD']['stepsize'] = 1
-params['fallback'] = 100
+params['fallback'] = 1000
 
 fileTypeDict = {}
 fileTypeDict['a9a'] = 'txt'

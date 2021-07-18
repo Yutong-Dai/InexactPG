@@ -14,7 +14,7 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 
 import argparse
 from src.params import params
-from _batch import runall
+from _batch_compare import runall
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Inexact Proximal Gradient bacth testing.')

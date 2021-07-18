@@ -19,8 +19,7 @@ from src.params import fileTypeDict
 from src.regularizer import natOG
 from src.lossfunction import LogisticLoss, LeastSquares
 from src.natOG.Problem import ProbNatOG
-from src.natOG.Solver import Solver
-from src.natOG.SolverLee import Solver as SolverLee
+from src.natOG.SolverCompareLee import Solver
 
 def _unit_problem(directory, inexact_type, loss, lambda_shrinkage, group_size, overlap_ratio, datasetName, params, dbDir='../../../db'):
     log_path = directory + "/{}".format(datasetName)
