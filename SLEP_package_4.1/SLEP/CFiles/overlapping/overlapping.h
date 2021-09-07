@@ -1382,7 +1382,6 @@ void overlapping_agd(double *x, double *gap, double *penalty2,
 void overlapping(double *x, double *gap, double *penalty2,
         double *v, int p, int g, double lambda1, double lambda2,
         double *w, double *G, double *Y, int maxIter, int flag, double tol){
-    
     switch(flag){
         case 0: 
         case 1:

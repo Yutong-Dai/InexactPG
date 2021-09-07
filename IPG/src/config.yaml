@@ -1,0 +1,36 @@
+mainsolver:
+  accuracy: 1.0e-5
+  iteration_limits: 10000
+  time_limits: 3600.0 # in seconds
+  log: True  # save logs to a file
+  print_level: 2 # 0: print nothing; 1: print basic; 2:print everthing
+  print_every: 20
+  check_point: False
+  # frac: reduce by a fraction when perform backtracking 
+  # model: model based 
+  # heuristic: tfocx like
+  stepsize_strategy: const  
+  inexact_strategy: schimdt
+
+subsolver:
+  iteration_limits: 1000
+  time_limits: 3600.0 # in seconds
+  warmup: True # use the iterate and stepsize from the last main iteration as the starting point
+  print_level: 2 # 0: print nothing; 1: print basic; 2:print everthing
+  compute_exactpg: True
+
+linesearch:
+  eta: 1.0e-5
+  xi: 0.5
+  zeta: 0.9
+  beta: 1.0
+
+inexactpg:
+  schimdt:  # c/k^delta, where k is the iteartion counter
+    delta: 3
+    c: 1.0
+  lee:
+    gamma: 0.5
+
+
+  

@@ -2,18 +2,17 @@
 File: params.py
 Author: Yutong Dai (rothdyt@gmail.com)
 File Created: 2019-10-31 15:51
-Last Modified: 2021-06-11 14:44
+Last Modified: 2021-04-18 21:11
 --------------------------------------------
 Description:
 '''
-from numpy import inf
 params = {}
 # termination
 params['tol'] = 1e-6
-params['max_iter'] = inf
+params['max_iter'] = 100000
+params['maxiter_inner'] = 5e5
 params['max_time'] = 3600
-params['max_back'] = 50
-# print
+params['max_back'] = 100
 params['printlevel'] = 2
 params['printevery'] = 20
 # algorithm parameters
@@ -25,35 +24,13 @@ params['zeta'] = 0.8
 # this trick is used in tfocs implementation
 # to boost numerical performance
 params['beta'] = 1  # 1 / 0.9
-params['update_alpha_strategy'] = 'model'  # model / none /frac 
-params['optimality_measure'] = 'aprox'  # iterates
-params['inexact_type'] = 1  # 1:mine 2: Lee-like 3:schimdt 4:lee
-params['gamma1'] = 1e-12
-params['gamma2'] = 1e-12
-params['gamma4'] = 1-1e-12
-params['nu'] = 0.5
+params['update_alpha_strategy'] = 'none'  # model / none
+params['optimality_measure'] = 'prox'  # iterates
+params['inexact_strategy'] = 'sampling'
 # parameters for schimdt method
-params['delta'] = 3  # 1e-3
+params['delta'] = 1  # 1e-3
 params['schimdt_const'] = 1  # c/k^3
-params['ckpt'] = False
-params['ckpt_tol'] = 1e-4
 
-# if True, then the stepsize alphak of Latent
-# overlapping group l1 will be scaled to the
-# same number (1-eta)/L for comparison purpose
-# hence gamma_1 will also be adjusted accordingly.
-params['scale_alpha'] = True
-
-# config for subsolvers
-params['subsolver'] = 'projectedGD'
-params['warm_start'] = True
-params['subsolver_verbose'] = False
-params['projectedNewton'] = {}
-params['projectedNewton']['maxiter'] = 100
-params['projectedGD'] = {}
-params['projectedGD']['maxiter'] = 100
-params['projectedGD']['stepsize'] = 1
-params['fallback'] = 1000
 
 fileTypeDict = {}
 fileTypeDict['a9a'] = 'txt'
@@ -123,14 +100,3 @@ fileTypeDict['bodyfat_scale_expanded7'] = 'mat'
 fileTypeDict['pyrim_scale_expanded5'] = 'mat'
 fileTypeDict['triazines_scale_expanded4'] = 'mat'
 fileTypeDict['housing_scale_expanded7'] = 'mat'
-
-gammas = {}
-gammas['bodyfat_scale_expanded7'] = [1e-4, 1e-5, 1e-6]
-gammas['pyrim_scale_expanded5'] = [1e-2, 1e-3, 1e-4]
-gammas['triazines_scale_expanded4'] = [1e-2, 1e-3, 1e-4]
-gammas['housing_scale_expanded7'] = [1e-2, 1e-3, 1e-4]
-groups = {}
-groups['bodyfat_scale_expanded7'] = 388
-groups['pyrim_scale_expanded5'] = 671
-groups['triazines_scale_expanded4'] = 2118
-groups['housing_scale_expanded7'] = 258

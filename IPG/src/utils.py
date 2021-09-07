@@ -1,17 +1,24 @@
 '''
-File: utils.py
-Author: Yutong Dai (rothdyt@gmail.com)
-File Created: 2020-07-01 13:49
-Last Modified: 2021-06-12 00:11
---------------------------------------------
-Description:
+# File: utils.py
+# Project: ipg
+# Created Date: 2021-08-23 11:31
+# Author: Yutong Dai yutongdai95@gmail.com
+# -----
+# Last Modified: 2021-08-29 7:22
+# Modified By: Yutong Dai yutongdai95@gmail.com
+# 
+# This code is published under the MIT License.
+# -----
+# HISTORY:
+# Date      	By 	Comments
+# ----------	---	----------------------------------------------------------
 '''
+
 import numpy as np
 from scipy.io import loadmat
 from sklearn.datasets import load_svmlight_file
 from scipy.sparse import issparse
 from numba import jit
-import warnings
 
 
 def l2_norm(x):
@@ -40,74 +47,16 @@ def set_up_xy(datasetName, fileType='txt', dbDir='../db', to_dense=False):
             return data_dict['A'], data_dict['b']
         except KeyError:
             print("Invalid matlab data file path... I cannot find X and y.")
-
-
-class GenOverlapGroup:
-    def __init__(self, dim, num_grp=None, grp_size=None, overlap_ratio=None):
-        self.dim = dim
-        self.num_grp = num_grp
-        self.grp_size = grp_size
-        self.overlap_ratio = overlap_ratio
-
-    def get_group(self):
-        if self.num_grp is not None and self.grp_size is not None:
-            if self.grp_size * self.num_grp <= self.dim:
-                raise ValueError("grp_size is too small to have overlapping.")
-            if self.grp_size >= self.dim:
-                raise ValueError("grp_size is too large that each group has all variables.")
-            exceed = self.num_grp * self.grp_size - self.dim
-            overlap_per_group = int(exceed / (self.num_grp - 1))
-            starts = [0] * self.num_grp
-            ends = [0] * self.num_grp
-            for i in range(self.num_grp):
-                if i == 0:
-                    start = 0
-                    end = start + self.grp_size - 1
-                else:
-                    start = end - overlap_per_group + 1
-                    end = min(start + self.grp_size - 1, self.dim - 1)
-                    if start == starts[i - 1] and end == ends[i - 1]:
-                        self.num_grp = i
-                        print(f"The actual number of group is {self.num_grp}")
-                        break
-                starts[i] = start
-                ends[i] = end
-            return starts[:i + 1], ends[:i + 1]
-        elif self.grp_size is not None and self.overlap_ratio is not None:
-            if self.grp_size >= self.dim:
-                raise ValueError("grp_size is too large that each group has all variables.")
-            overlap = int(self.grp_size * self.overlap_ratio)
-            if overlap < 1:
-                msg = "current config of grp_size and overlap_ratio cannot produce overlapping groups.\n"
-                msg += "overlap_ratio is adjusted to have at least one overlap."
-                warnings.warn(msg)
-                overlap = 1
-            starts = []
-            ends = []
-            self.num_grp = 0
-            start = 0
-            end = self.grp_size - 1
-            while True:
-                starts.append(start)
-                ends.append(end)
-                self.num_grp += 1
-                # update
-                start = end - (overlap - 1)
-                end = min(start + self.grp_size - 1, self.dim - 1)
-                if end == ends[-1]:
-                    break
-            return starts, ends
-        else:
-            raise ValueError("check your inputs!")
-
-
-def lam_max(X, y, starts, ends, loss='logit'):
+            
+def lam_max(X, y, group, loss='logit'):
     """
     Reference: Yi Yang and Hui Zou. A fast unified algorithm for solving group-lasso penalize learning problems. Page 22.
     """
+    # beta_1 = np.log(np.sum(y == 1) / np.sum(y == -1))
     beta_1 = np.zeros((X.shape[1], 1))
     lam_max = -1
-    K = len(starts)
+    unique_groups, group_frequency = np.unique(group, return_counts=True)
+    K = len(unique_groups)
     if loss == 'logit':
         ys = y / (1 + np.exp(y * (X @ beta_1)))
         nabla_L = X.T @ ys / X.shape[0]
@@ -117,13 +66,31 @@ def lam_max(X, y, starts, ends, loss='logit'):
     else:
         raise ValueError("Invalid loss!")
     for i in range(K):
-        start, end = starts[i], ends[i] + 1
-        sub_grp = nabla_L[start:end]
-        temp = l2_norm(sub_grp) / np.sqrt(end - start)
+        sub_grp = nabla_L[group == (i + 1)]
+        temp = l2_norm(sub_grp) / np.sqrt(group_frequency[i])
         if temp > lam_max:
             lam_max = temp
     return lam_max
 
+def gen_group(p, K):
+    dtype = type(K)
+    if dtype == int:
+        group = K * np.ones(p)
+        size = int(np.floor(p / K))
+        for i in range(K):
+            start_ = i * size
+            end_ = start_ + size
+            group[start_:end_] = i + 1
+    elif dtype == np.ndarray:
+        portion = K
+        group = np.ones(p)
+        chunk_size = p * portion
+        start_ = 0
+        for i in range(len(portion)):
+            end_ = start_ + int(chunk_size[i])
+            group[start_:end_] = i + 1
+            start_ = int(chunk_size[i]) + start_
+    return group
 
 def estimate_lipschitz(A, loss='logit'):
     m, n = A.shape
@@ -135,9 +102,3 @@ def estimate_lipschitz(A, loss='logit'):
     hess = hess.toarray()
     L = np.max(np.linalg.eigvalsh(hess))
     return L
-
-
-class AlgorithmError(Exception):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(message)
