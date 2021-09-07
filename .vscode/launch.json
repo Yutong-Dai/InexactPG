@@ -18,7 +18,7 @@
             "request": "launch",
             "program": "${file}",
             "cwd": "${fileDirname}",
-            "console": "internalConsole"//"integratedTerminal"
+            "console": "internalConsole" //"integratedTerminal"
         }
     ]
 }

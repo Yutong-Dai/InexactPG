@@ -1,3 +1,12 @@
 {
-    "python.pythonPath": "/home/yud319/anaconda3/bin/python"
+    "python.pythonPath": "/home/yud319/anaconda3/bin/python",
+    "python.formatting.provider": "autopep8",
+    "[cpp]": {
+        "editor.formatOnType": false,
+        "editor.formatOnSave": false
+    },
+    "[c]": {
+        "editor.formatOnType": false,
+        "editor.formatOnSave": false
+    }
 }
