@@ -14,3 +14,4 @@ IPG/src/__pycache__/*
 IPG/test/pbs/latentOG/*.pbs
 IPG/test/pbs/natOG/*.pbs
 
+IPG/src/__pycache__/*
