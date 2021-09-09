@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:31
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-08-31 12:40
+# Last Modified: 2021-09-09 11:08
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -60,7 +60,7 @@ class NatOG:
                 within each group the index needs to be sorted
         """
         assert len(groups) == len(
-            weights), "groups and weights should be of the same lengthg"
+            weights), "groups and weights should be of the same length"
         self.penalty = penalty
         self.K = len(groups)
         if weights is None:
@@ -91,6 +91,7 @@ class NatOG:
         self.A = coo_matrix((vals, (rows, cols)),
                             shape=(p, self.lifted_dimension))
         self.A = self.A.tocsc()
+        self.ATA = self.A.T @ self.A
 
         # relabel groups in lifted space
         self.starts, self.ends = [], []
@@ -126,7 +127,8 @@ class NatOG:
             implement the fixed stepsize projected  gradient descent
         """
         uk = xk - alphak * gradfxk
-        inexact_strategy = config['mainsolver']['inexact_strategy']
+        ATuk = self.A.T @ uk
+        inexact_pg_computation = config['mainsolver']['inexact_pg_computation']
         if y_init is None:
             y_current = np.zeros((self.lifted_dimension, 1))
         else:
@@ -138,45 +140,119 @@ class NatOG:
         else:
             self.stepsize = stepsize_init
         self.inner_its = 0
-        if inexact_strategy == 'schimdt':
-            # outter iteration counter, begin with 0, therefore add 1
-            k = kwargs['iteration'] + 1
-            self.targap = config['inexactpg']['schimdt']['c'] / \
-                (k + 1)**config['inexactpg']['schimdt']['delta']
-            # self.targap = 1e-16
-            # warnings.warn("Exact solve!")
-            while True:
-                self.inner_its += 1
+        if not config['mainsolver']['exact_pg_computation']:
+            if inexact_pg_computation == 'schimdt':
+                # outter iteration counter begins with 0, therefore add 1
+                k = kwargs['iteration'] + 1
+                self.targap = config['inexactpg']['schimdt']['c'] / \
+                    (k + 1)**config['inexactpg']['schimdt']['delta']
+                # self.targap = 1e-16
+                # warnings.warn("Exact solve!")
+            elif inexact_pg_computation == 'yd':
+                ckplu1 = (np.sqrt(
+                    6 / (1 + config['inexactpg']['yd']['gamma']) * alphak) - np.sqrt(2 / alphak)) ** 2 / 4
+            elif inexact_pg_computation == 'lee':
+                primal_val_xk = prox_primal(
+                    xk, uk, alphak, self.func(xk))
+                gamma = config['inexactpg']['lee']['gamma']
+            else:
+                raise ValueError(
+                    f"Unrecognized inexact_pg_computation value:{inexact_pg_computation}")
+        else:
+            self.targap = config['mainsolver']['exact_pg_computation_tol']
+
+        dual_val_ycurrent = prox_dual(self.A @ y_current, uk, alphak)[0][0]
+        grad_psi_ycurrent = (alphak * self.ATA @ y_current + ATuk)
+        while True:
+            self.inner_its += 1
+            self.total_bak = 0
+            # perform arc search to find suitable stepsize
+            bak = 0
+            if config['subsolver']['linesearch']:
+                while True:
+                    ytrial, projected_group = self._proj_norm_ball(
+                        y_current - self.stepsize * grad_psi_ycurrent)
+                    dual_val = prox_dual(self.A @ ytrial, uk, alphak)[0][0]
+                    # taking negative because we are doing projected gradient descent with respect to the
+                    # negative of the dual objective, namely psi function
+                    LHS = -(dual_val - dual_val_ycurrent)
+                    RHS = (config['linesearch']['eta'] *
+                           (grad_psi_ycurrent.T @ (ytrial - y_current)))
+                    # print(
+                    #     f"its:{kwargs['iteration']:3d} | LHS:{LHS:.4e} | RHS:{RHS:.4e} | LHS-RHS:{LHS-RHS:.4e}")
+                    # break
+                    if LHS <= RHS:
+                        self.total_bak += bak
+                        break
+                    if bak > 100:
+                        self.aoptim = 1e9
+                        self.flag = 'lscfail'
+                        self.gap = 1e9
+                        self.targap = 1e9
+                        self.total_bak += bak
+                        return None, None, None
+                    self.stepsize *= config['linesearch']['xi']
+                    bak += 1
+            else:
                 ytrial, projected_group = self._proj_norm_ball(
-                    y_current - self.stepsize * (alphak * self.A.T @ self.A @ y_current + self.A.T @ uk))
-                xtrial = alphak * (self.A @ ytrial) + uk
-                xtrial_proj = xtrial.copy()
-                for i in range(self.K):
-                    if i not in projected_group:
-                        xtrial_proj[self.groups_dict[i]] = 0.0
-                # check for termination
-                dual_val = prox_dual(self.A @ ytrial, uk, alphak)
-                primal_val_proj = prox_primal(
-                    xtrial_proj, uk, alphak, self.func(xtrial_proj))
-                gap = (primal_val_proj - dual_val)[0][0]
-                if gap < self.targap:
-                    xtrial = xtrial_proj
-                    self.flag = 'desired'
-                    break
-                primal_val = prox_primal(
-                    xtrial, uk, alphak, self.func(xtrial))
-                gap = (primal_val - dual_val)[0][0]
-                if gap < self.targap:
-                    self.flag = 'desired'
-                    break
-                if self.inner_its > config['subsolver']['iteration_limits']:
-                    self.flag = 'maxiters'
-                    break
-                y_current = ytrial
-            self.gap = gap
+                    y_current - self.stepsize * grad_psi_ycurrent)
+                dual_val = prox_dual(self.A @ ytrial, uk, alphak)[0][0]
+
+            # get the primal approximate solution from the dual
+            xtrial = alphak * (self.A @ ytrial) + uk
+            # attempt to project the primal approximate solution
+            xtrial_proj = xtrial.copy()
+            for i in range(self.K):
+                if i not in projected_group:
+                    xtrial_proj[self.groups_dict[i]] = 0.0
+
+            ######################### check for termination ###############################
+            # first check the projected primal
+            primal_val_proj = prox_primal(
+                xtrial_proj, uk, alphak, self.func(xtrial_proj))
+            gap = (primal_val_proj - dual_val)
+            if not config['mainsolver']['exact_pg_computation']:
+                if inexact_pg_computation == 'yd':
+                    self.targap = ckplu1 * l2_norm(xtrial_proj - xk)
+                elif inexact_pg_computation == 'lee':
+                    self.targap = gamma * (primal_val_xk - dual_val)
+                elif inexact_pg_computation == 'schimdt':
+                    pass
+                else:
+                    raise ValueError(
+                        f"Unrecognized inexact_pg_computation value:{inexact_pg_computation}")
+            if gap < self.targap:
+                xtrial = xtrial_proj
+                self.flag = 'desired'
+                break
+            # then check the un-projected primal
+            primal_val = prox_primal(
+                xtrial, uk, alphak, self.func(xtrial))
+            gap = (primal_val - dual_val)
+            if not config['mainsolver']['exact_pg_computation']:
+                if inexact_pg_computation == 'yd':
+                    self.targap = ckplu1 * l2_norm(xtrial - xk)
+            if gap < self.targap:
+                self.flag = 'desired'
+                break
+            if self.inner_its > config['subsolver']['iteration_limits']:
+                self.flag = 'maxiters'
+                break
+            # proceed to the next iteration
+            y_current = ytrial
+            grad_psi_ycurrent = (alphak * self.ATA @ y_current + ATuk)
+            dual_val_ycurrent = dual_val
+            # if no backtracking is performed, increase the stepsize for the next iteration
+            if bak == 0:
+                self.stepsize *= config['linesearch']['beta']
+        # post-processing
+        self.gap = gap
+        if not config['mainsolver']['exact_pg_computation'] and inexact_pg_computation == 'yd':
+            self.aoptim = self.targap / ckplu1
+        else:
             self.aoptim = l2_norm(xtrial - xk)
-            self.xtrial = xtrial
-            return xtrial, ytrial, self.aoptim
+        self.xtrial = xtrial
+        return xtrial, ytrial, self.aoptim
 
     def _proj_norm_ball(self, y):
         return _proj_norm_ball_jit(y, self.K, self.starts, self.ends, self.weights)
@@ -185,7 +261,7 @@ class NatOG:
         # printlevel == 1
         header = "  aoptim   its.   Flag "
         if config['mainsolver']['print_level'] == 2:
-            header += " Stepsize     Gap       tarGap "
+            header += " Stepsize  baks    Gap       tarGap "
             header += "   #az  #anz |"
         else:
             header += "|"
@@ -194,7 +270,7 @@ class NatOG:
     def print_iteration(self, config):
         content = f" {self.aoptim:.3e} {self.inner_its:4d} {self.flag}"
         if config['mainsolver']['print_level'] == 2:
-            content += f" {self.stepsize:.3e} {self.gap:+.3e} {self.targap:+.3e}"
+            content += f" {self.stepsize:.3e} {self.total_bak:4d} {self.gap:+.3e} {self.targap:+.3e}"
             nnz, nz = self._get_group_structure(self.xtrial)
             content += f" {nz:4d}  {nnz:4d} |"
         else:
@@ -499,7 +575,7 @@ class GL1:
             implement the fixed stepsize projected  gradient descent
         """
         uk = xk - alphak * gradfxk
-        inexact_strategy = config['mainsolver']['inexact_strategy']
+        inexact_pg_computation = config['mainsolver']['inexact_pg_computation']
         if y_init is None:
             y_current = np.zeros_like(uk)
         else:
@@ -509,10 +585,10 @@ class GL1:
         else:
             self.stepsize = stepsize_init
         self.inner_its = 0
-        if config['subsolver']['compute_exactpg']:
+        if config['subsolver']['exact_pg_computation']:
             self.compute_proximal_gradient_update(xk, alphak, gradfxk)
             self.optim = l2_norm(self.prox - xk)
-        if inexact_strategy == 'schimdt':
+        if inexact_pg_computation == 'schimdt':
             # outter iteration counter, begin with 0, therefore add 1
             k = kwargs['iteration'] + 1
             self.targap = config['inexactpg']['schimdt']['c'] / \
@@ -571,13 +647,13 @@ class GL1:
 
     def print_header(self, config):
         # printlevel == 1
-        if config['subsolver']['compute_exactpg']:
+        if config['subsolver']['exact_pg_computation']:
             header = "    aoptim/optim     its.  Flag  "
         else:
             header = "  aoptim   its.   Flag "
         if config['mainsolver']['print_level'] == 2:
             header += " Stepsize     Gap       TarGap "
-            if config['subsolver']['compute_exactpg']:
+            if config['subsolver']['exact_pg_computation']:
                 header += "     #az/#z   #anz/#nz |"
             else:
                 header += "   #az  #anz |"
@@ -588,14 +664,14 @@ class GL1:
 
     def print_iteration(self, config):
         # printlevel == 1
-        if config['subsolver']['compute_exactpg']:
+        if config['subsolver']['exact_pg_computation']:
             content = f" {self.aoptim:.3e}/{self.optim:.3e} {self.inner_its:4d} {self.flag}"
         else:
             content = f" {self.aoptim:.3e} {self.inner_its:4d} {self.flag}"
         if config['mainsolver']['print_level'] == 2:
             content += f" {self.stepsize:.3e} {self.gap:+.3e} {self.targap:+.3e}"
             nnz, nz = self._get_group_structure(self.xtrial)
-            if config['subsolver']['compute_exactpg']:
+            if config['subsolver']['exact_pg_computation']:
                 content += f" {nz:4d}/{self.zeroGroup:4d}  {nnz:4d}/{self.nonZeroGroup:4d} |"
             else:
                 content += f" {nz:4d}  {nnz:4d} |"

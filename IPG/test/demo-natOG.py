@@ -4,7 +4,7 @@
 # Created Date: 2021-08-30 10:44
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-08-30 6:39
+# Last Modified: 2021-09-09 11:09
 # Modified By: Yutong Dai yutongdai95@gmail.com
 # 
 # This code is published under the MIT License.
@@ -52,9 +52,34 @@ groups = [g0, g1, g2]
 weights = np.array([1.0, 20.0, 1.0])
 r = NatOG(penalty=0.1, groups=groups, weights=weights)
 
+print("Exact subprobsolve")
 with open('../src/config.yaml', "r") as stream:
     config = yaml.load(stream, Loader=yaml.SafeLoader)
-config['subsolver']['compute_exactpg'] = False
+config['mainsolver']['exact_pg_computation'] = True
+solver = IpgSolver(f, r, config)
+solver.solve(alpha_init=1.0 / L)
+print(solver.solution.T)
+print("Inexact subprobsolve: schimdt")
+with open('../src/config.yaml', "r") as stream:
+    config = yaml.load(stream, Loader=yaml.SafeLoader)
+config['mainsolver']['exact_pg_computation'] = False
+config['mainsolver']['inexact_pg_computation'] = 'schimdt'
+solver = IpgSolver(f, r, config)
+solver.solve(alpha_init=1.0 / L)
+print(solver.solution.T)
+print("Inexact subprobsolve: lee")
+with open('../src/config.yaml', "r") as stream:
+    config = yaml.load(stream, Loader=yaml.SafeLoader)
+config['mainsolver']['exact_pg_computation'] = False
+config['mainsolver']['inexact_pg_computation'] = 'lee'
+solver = IpgSolver(f, r, config)
+solver.solve(alpha_init=1.0 / L)
+print(solver.solution.T)
+print("Inexact subprobsolve: yd")
+with open('../src/config.yaml', "r") as stream:
+    config = yaml.load(stream, Loader=yaml.SafeLoader)
+config['mainsolver']['exact_pg_computation'] = False
+config['mainsolver']['inexact_pg_computation'] = 'yd'
 solver = IpgSolver(f, r, config)
 solver.solve(alpha_init=1.0 / L)
 print(solver.solution.T)

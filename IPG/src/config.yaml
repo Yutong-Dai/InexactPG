@@ -1,35 +1,50 @@
+# configuation for proximal gradient method
 mainsolver:
   accuracy: 1.0e-5
   iteration_limits: 10000
   time_limits: 3600.0 # in seconds
   log: True  # save logs to a file
-  print_level: 2 # 0: print nothing; 1: print basic; 2:print everthing
-  print_every: 20
-  check_point: False
+  print_level: 2 # 0: print nothing; 1: print basics; 2:print everthing
+  print_every: 20 # print header every print_every iteration
+  check_point: False # save itermediate results
+  linesearch: False
+  # strategy for adjusting alphak
+  # const: keep it unchanged
   # frac: reduce by a fraction when perform backtracking 
   # model: model based 
   # heuristic: tfocx like
-  stepsize_strategy: const  
-  inexact_strategy: schimdt
+  stepsize_strategy: const
+  # if the proximal gradient problem has closed-form solution, then compute it exactly
+  # othwerwise solve it to high-accuracy, meaning duality gap is smaller than 
+  # `exact_pg_computation_tol`;
+  # if set to True, then the config for early termination conditions will be ignored
+  exact_pg_computation: False
+  exact_pg_computation_tol: 1.0e-10
+  # available options: schimdt, lee, yd 
+  inexact_pg_computation: schimdt
 
+# configuation for the subsolver
 subsolver:
+  # available options: PGD / SLEP
+  # name: PGD
   iteration_limits: 1000
-  time_limits: 3600.0 # in seconds
-  warmup: True # use the iterate and stepsize from the last main iteration as the starting point
-  print_level: 2 # 0: print nothing; 1: print basic; 2:print everthing
-  compute_exactpg: True
+  linesearch: True
+  warmstart: True # use the iterate and stepsize from the last main iteration as the starting point
+  
 
 linesearch:
   eta: 1.0e-5
   xi: 0.5
-  zeta: 0.9
-  beta: 1.0
+  zeta: 0.8
+  beta: 1.1
 
 inexactpg:
   schimdt:  # c/k^delta, where k is the iteartion counter
     delta: 3
     c: 1.0
   lee:
+    gamma: 0.5
+  yd:
     gamma: 0.5
 
 
