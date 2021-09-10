@@ -1,8 +1,0 @@
-#PBS -N prescribe_ls_0.01
-#PBS -e /home/yud319/InexactPG/IPG/test/log/cache/prescribe_ls_0.01.err
-#PBS -o /home/yud319/InexactPG/IPG/test/log/cache/prescribe_ls_0.01.out
-#PBS -l nodes=1:ppn=4
-#PBS -l mem=8gb,vmem=8gb
-#PBS -q long
-cd /home/yud319/InexactPG/IPG/test/schimdt
-/home/yud319/anaconda3/bin/python runall.py --date 04_06_2021 --loss ls --lam_shrink 0.01

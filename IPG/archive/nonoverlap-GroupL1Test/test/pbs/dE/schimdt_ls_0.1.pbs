@@ -1,8 +1,0 @@
-#PBS -N schimdt_ls_0.1
-#PBS -e /home/yud319/InexactPG/IPG/test/log/cache/schimdt_ls_0.1.err
-#PBS -o /home/yud319/InexactPG/IPG/test/log/cache/schimdt_ls_0.1.out
-#PBS -l nodes=1:ppn=4
-#PBS -l mem=8gb,vmem=8gb
-#PBS -q long
-cd /home/yud319/InexactPG/IPG/test/preDifferentInexact
-/home/yud319/anaconda3/bin/python runall.py --date 04_10_2021 --solver schimdt --loss ls --lam_shrink 0.1

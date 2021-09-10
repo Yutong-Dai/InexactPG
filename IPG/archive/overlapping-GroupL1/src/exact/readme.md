@@ -1,1 +1,0 @@
-This version is the latent formulation of the overlapping groupl1 with the regularizer evaluated by solving a second order cone programming.
