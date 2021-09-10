@@ -4,7 +4,7 @@
 # Created Date: 2021-09-09 11:59
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-10 12:57
+# Last Modified: 2021-09-10 12:26
 # Modified By: Yutong Dai yutongdai95@gmail.com
 # 
 # This code is published under the MIT License.
@@ -26,9 +26,10 @@ from src.params import *
 import yaml
 import platform
 import argparse
+import numpy as np
 
 
-def _unit_problem(directory, inexact_type, loss, lam_shrink, grp_size, overlap_ratio, datasetName, dbDir, save_ckpt,
+def _unit_problem(directory, inexact_type, loss, lam_shrink, group_size, overlap_ratio, datasetName, dbDir, save_ckpt,
                   milestone, date, config):
     log_path = directory + "/{}".format(datasetName)
     print("Working on: {}... | inexact_type: {}".format(
@@ -53,7 +54,7 @@ def _unit_problem(directory, inexact_type, loss, lam_shrink, grp_size, overlap_r
 
         # setting up groups
         p = X.shape[1]
-        grp_size = min(p // 2, grp_size)
+        grp_size = min(p // 2, group_size)
         generator = utils.GenOverlapGroup(
             p, grp_size=grp_size, overlap_ratio=overlap_ratio)
         groups, starts, ends = generator.get_group()
@@ -72,17 +73,19 @@ def _unit_problem(directory, inexact_type, loss, lam_shrink, grp_size, overlap_r
         # setting up the regularizer
         r = NatOG(penalty=lammax * lam_shrink, groups=groups, weights=None)
         save_ckpt_id = {'date': date, 'loss': loss,
-                        "lam_shrink": lam_shrink, "grp_size": grp_size, "overlap_ratio": overlap_ratio}
+                        "lam_shrink": lam_shrink, "grp_size": group_size, "overlap_ratio": overlap_ratio}
         solver = IpgSolver(f, r, config)
 
         info = solver.solve(alpha_init=1.0, save_ckpt=save_ckpt,
                             save_ckpt_id=save_ckpt_id, milestone=milestone)
         print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
+        info_path = directory + "/{}_info.npy".format(datasetName)
+        np.save(info_path, info)
 
 
-def runall(date, inexact_type, loss, lam_shrink, grp_size, overlap_ratio, datasets, dbDir, config, save_ckpt,
+def runall(date, inexact_type, loss, lam_shrink, group_size, overlap_ratio, datasets, dbDir, config, save_ckpt,
            milestone):
-    directory = f"./log/{date}/{inexact_type}/{loss}/logfile/{lam_shrink}_{grp_size}_{overlap_ratio}"
+    directory = f"./log/{date}/{inexact_type}/{loss}/logfile/{lam_shrink}_{group_size}_{overlap_ratio}"
     if inexact_type == 'exact':
         directory += "_empty"
     elif inexact_type == 'schimdt':
@@ -97,7 +100,7 @@ def runall(date, inexact_type, loss, lam_shrink, grp_size, overlap_ratio, datase
         os.makedirs(directory)
     for datasetName in datasets:
         _unit_problem(directory, inexact_type, loss, lam_shrink,
-                      grp_size, overlap_ratio, datasetName, dbDir, save_ckpt,
+                      group_size, overlap_ratio, datasetName, dbDir, save_ckpt,
                       milestone, date, config)
 
 
@@ -109,7 +112,7 @@ if __name__ == "__main__":
     parser.add_argument('--loss', default='logit', type=str, help='ls/logit')
     parser.add_argument('--lam_shrink', default=0.1, type=float,
                         help='lambda shrink parameters')
-    parser.add_argument('--grp_size', default=10, type=int,
+    parser.add_argument('--group_size', default=10, type=int,
                         help='number of variables per group')
     parser.add_argument('--overlap_ratio', default=0.1,
                         type=float, help='overlap ratio for each groups')
@@ -148,12 +151,11 @@ if __name__ == "__main__":
     config['mainsolver']['accuracy'] = args.tol
     config['mainsolver']['time_limits'] = args.max_time
     save_ckpt = True
-    milestone = [1e-3, 1e-4, 1e-5, 1e-6]
+    milestone = [1e-3, 1e-4, 1e-5]
     if args.loss == 'logit':
         if not args.largedb:
-
             if platform.platform() == 'Darwin-16.7.0-x86_64-i386-64bit':
-                datasets = ["a9a", 'w8a']
+                datasets = ["w8a"]
             else:
                 datasets = ["colon_cancer"]
         else:
@@ -165,9 +167,9 @@ if __name__ == "__main__":
 
     # local run
     if platform.platform() == 'Darwin-16.7.0-x86_64-i386-64bit':
-        runall(args.date, args.inexact_type, args.loss, args.lam_shrink, args.grp_size, args.overlap_ratio,
-               datasets, '/Users/ym/Documents/GroupFaRSA/db/', config, save_ckpt, milestone)
+        runall(args.date, args.inexact_type, args.loss, args.lam_shrink, args.group_size, args.overlap_ratio,
+               datasets, '/Users/ym/Documents/GroupFaRSA/db', config, save_ckpt, milestone)
     else:
         # polyps run
-        runall(args.date, args.inexact_type, args.loss, args.lam_shrink, args.grp_size, args.overlap_ratio,
+        runall(args.date, args.inexact_type, args.loss, args.lam_shrink, args.group_size, args.overlap_ratio,
                datasets, '../../../GroupFaRSA/db', config, save_ckpt, milestone)

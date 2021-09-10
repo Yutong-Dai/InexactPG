@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:31
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-09 11:01
+# Last Modified: 2021-09-10 1:13
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -191,6 +191,7 @@ class NatOG:
                     # if kwargs['iteration'] == 68:
                     #     print(
                     #         f"its:{kwargs['iteration']:3d} | LHS:{LHS:.4e} | RHS:{RHS:.4e} | LHS-RHS:{LHS-RHS:.4e}")
+                    # polyps precision is low change 1e-16 to 1e-12
                     if (LHS <= RHS) or (np.abs(LHS) < 1e-12 and np.abs(RHS) < 1e-12):
                         self.total_bak += bak
                         break
@@ -200,7 +201,6 @@ class NatOG:
                         self.gap = 1e9
                         self.targap = 1e9
                         self.total_bak += bak
-                        print('total_bak', self.total_bak, 'bak', bak)
                         return None, None, 1e9
                     self.stepsize *= config['linesearch']['xi']
                     bak += 1
