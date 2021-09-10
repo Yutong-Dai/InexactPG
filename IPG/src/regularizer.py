@@ -172,9 +172,9 @@ class NatOG:
         # print("xk:", xk.T)
         # print("gradfxk", gradfxk.T)
         # print("alphak:", alphak, 'stepsize', self.stepsize)
+        self.total_bak = 0
         while True:
             self.inner_its += 1
-            self.total_bak = 0
             # perform arc search to find suitable stepsize
             bak = 0
             if config['subsolver']['linesearch']:
@@ -188,10 +188,10 @@ class NatOG:
                     LHS = -(dual_val - dual_val_ycurrent)
                     RHS = (config['linesearch']['eta'] *
                            (grad_psi_ycurrent.T @ (ytrial - y_current)))[0][0]
-                    # if kwargs['iteration'] == 22:
+                    # if kwargs['iteration'] == 68:
                     #     print(
                     #         f"its:{kwargs['iteration']:3d} | LHS:{LHS:.4e} | RHS:{RHS:.4e} | LHS-RHS:{LHS-RHS:.4e}")
-                    if (LHS <= RHS) or (np.abs(LHS) < 1e-16 and np.abs(RHS) < 1e-16):
+                    if (LHS <= RHS) or (np.abs(LHS) < 1e-12 and np.abs(RHS) < 1e-12):
                         self.total_bak += bak
                         break
                     if bak > 100:
@@ -200,7 +200,8 @@ class NatOG:
                         self.gap = 1e9
                         self.targap = 1e9
                         self.total_bak += bak
-                        return None, None, None
+                        print('total_bak', self.total_bak, 'bak', bak)
+                        return None, None, 1e9
                     self.stepsize *= config['linesearch']['xi']
                     bak += 1
             else:

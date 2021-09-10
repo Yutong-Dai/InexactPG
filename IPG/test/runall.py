@@ -155,8 +155,7 @@ if __name__ == "__main__":
             if platform.platform() == 'Darwin-16.7.0-x86_64-i386-64bit':
                 datasets = ["a9a", 'w8a']
             else:
-                datasets = ["a9a", "colon_cancer", "duke",
-                            "leu", "mushrooms", "w8a"]
+                datasets = ["colon_cancer"]
         else:
             datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
     else:

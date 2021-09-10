@@ -45,7 +45,7 @@ if __name__ == '__main__':
             for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.2, 0.3]:
                     for c in [1e0, 1e1, 1e2, 1e3, 1e4]:
-                        create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{gamma}',
+                        create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{c}',
                                outdir,
                                scriptdir,
                                finishdir,
