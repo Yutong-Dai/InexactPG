@@ -4,7 +4,7 @@
 # Created Date: 2021-09-09 9:27
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-10 10:52
+# Last Modified: 2021-09-10 11:34
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -60,7 +60,7 @@ r = NatOG(penalty=lammax * lam_shrink, groups=groups, weights=None)
 
 save_ckpt_id = {'date': "09_09_2021", 'loss': loss,
                 "lam_shrink": lam_shrink, "grp_size": grp_size, "overlap_ratio": overlap_ratio}
-milestone = [1e-3, 1e-4, 1e-5, 1e-6]
+milestone = [1e-3, 1e-4, 1e-5]
 
 alpha_init = 1.0
 # print("Exact subprobsolve")

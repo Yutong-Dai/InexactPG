@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:31
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-09 11:01
+# Last Modified: 2021-09-10 1:13
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -172,9 +172,9 @@ class NatOG:
         # print("xk:", xk.T)
         # print("gradfxk", gradfxk.T)
         # print("alphak:", alphak, 'stepsize', self.stepsize)
+        self.total_bak = 0
         while True:
             self.inner_its += 1
-            self.total_bak = 0
             # perform arc search to find suitable stepsize
             bak = 0
             if config['subsolver']['linesearch']:
@@ -191,7 +191,8 @@ class NatOG:
                     # if kwargs['iteration'] == 22:
                     #     print(
                     #         f"its:{kwargs['iteration']:3d} | LHS:{LHS:.4e} | RHS:{RHS:.4e} | LHS-RHS:{LHS-RHS:.4e}")
-                    if (LHS <= RHS) or (np.abs(LHS) < 1e-16 and np.abs(RHS) < 1e-16):
+                    # polyps precision is low change 1e-16 to 1e-12
+                    if (LHS <= RHS) or (np.abs(LHS) < 1e-12 and np.abs(RHS) < 1e-12):
                         self.total_bak += bak
                         break
                     if bak > 100:
@@ -200,7 +201,7 @@ class NatOG:
                         self.gap = 1e9
                         self.targap = 1e9
                         self.total_bak += bak
-                        return None, None, None
+                        return None, None, 1e9
                     self.stepsize *= config['linesearch']['xi']
                     bak += 1
             else:

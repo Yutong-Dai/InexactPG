@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:28
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-10 10:59
+# Last Modified: 2021-09-10 11:40
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -63,11 +63,11 @@ class IpgSolver:
                 raise ValueError(
                     "`save_ckpt` is set to True but `save_ckpt_id` is None!")
             self.datasetid = f"{self.datasetname}_{save_ckpt_id['lam_shrink']}_{save_ckpt_id['grp_size']}_{save_ckpt_id['overlap_ratio']}"
-        if milestone is None:
-            milestone = [self.config['mainsolver']['accuracy']]
-        else:
-            milestone.append(self.config['mainsolver']['accuracy'])
+            if milestone is None:
+                raise ValueError(
+                    "`save_ckpt` is set to True but `milestone` is None!")
             milestone = [*set(milestone)]
+            milestone.append(-1.0)  # placeholder
             milestone.sort(reverse=True)
         # configure mainsolver
         if x_init is None:
@@ -120,21 +120,21 @@ class IpgSolver:
                 # rescale milestone
                 milestone_scaled = [
                     max(1.0, self.aoptim) * i for i in milestone]
-
-            if self.aoptim <= milestone_scaled[0]:
-                nnz, nz = self.r._get_group_structure(xk)
-                info = {'iteration': self.iteration, 'time': self.time_so_far,
-                        'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
-                        'status': self.status,
-                        'fevals': self.fevals, 'gevals': self.gevals, 'optim': self.aoptim,
-                        'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
-                        'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
-                        }
-                milestone_scaled.pop(0)
-                ckpt_tol = milestone.pop(0)
-                ckpt_dir = self.generate_ckpt_dir(save_ckpt_id, ckpt_tol)
-                np.save(ckpt_dir +
-                        "/{}_info.npy".format(self.datasetname), info)
+            if save_ckpt:
+                if self.aoptim <= milestone_scaled[0]:
+                    nnz, nz = self.r._get_group_structure(xk)
+                    info = {'iteration': self.iteration, 'time': self.time_so_far,
+                            'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
+                            'status': self.status,
+                            'fevals': self.fevals, 'gevals': self.gevals, 'optim': self.aoptim,
+                            'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
+                            'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
+                            }
+                    milestone_scaled.pop(0)
+                    ckpt_tol = milestone.pop(0)
+                    ckpt_dir = self.generate_ckpt_dir(save_ckpt_id, ckpt_tol)
+                    np.save(ckpt_dir +
+                            "/{}_info.npy".format(self.datasetname), info)
             # check termination
             if self.aoptim <= tol:
                 self.status = 0
@@ -260,6 +260,18 @@ class IpgSolver:
             self.gevals += 1
         self.solution = xk
         self.print_exit()
+        nnz, nz = self.r._get_group_structure(xk)
+        info = {'iteration': self.iteration, 'time': self.time_so_far,
+                'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
+                'status': self.status,
+                'fevals': self.fevals, 'gevals': self.gevals, 'optim': self.aoptim,
+                'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
+                'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
+                }
+        ckpt_dir = self.generate_ckpt_dir(
+            save_ckpt_id, self.config['mainsolver']['accuracy'])
+        np.save(ckpt_dir +
+                "/{}_info.npy".format(self.datasetname), info)
         return info
 
     def print_problem(self):
