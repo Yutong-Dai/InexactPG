@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:31
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-09 11:08
+# Last Modified: 2021-09-09 11:01
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -21,8 +21,10 @@ from scipy.sparse import csc_matrix, coo_matrix
 import warnings
 
 
+# def l2_norm(x):
+#     return np.sqrt(np.dot(x.T, x))[0][0]
 def l2_norm(x):
-    return np.sqrt(np.dot(x.T, x))[0][0]
+    return np.sqrt(np.sum(x * x))
 
 
 def prox_primal(xk, uk, alphak, rxk):
@@ -59,8 +61,9 @@ class NatOG:
                 all coordinates need to be included
                 within each group the index needs to be sorted
         """
-        assert len(groups) == len(
-            weights), "groups and weights should be of the same length"
+        if weights is not None:
+            assert len(groups) == len(
+                weights), "groups and weights should be of the same length"
         self.penalty = penalty
         self.K = len(groups)
         if weights is None:
@@ -145,7 +148,7 @@ class NatOG:
                 # outter iteration counter begins with 0, therefore add 1
                 k = kwargs['iteration'] + 1
                 self.targap = config['inexactpg']['schimdt']['c'] / \
-                    (k + 1)**config['inexactpg']['schimdt']['delta']
+                    k**config['inexactpg']['schimdt']['delta']
                 # self.targap = 1e-16
                 # warnings.warn("Exact solve!")
             elif inexact_pg_computation == 'yd':
@@ -163,6 +166,12 @@ class NatOG:
 
         dual_val_ycurrent = prox_dual(self.A @ y_current, uk, alphak)[0][0]
         grad_psi_ycurrent = (alphak * self.ATA @ y_current + ATuk)
+        # print("===")
+        # print(f"outer iter:{kwargs['iteration']}")
+        # print("y_current:", y_current.T)
+        # print("xk:", xk.T)
+        # print("gradfxk", gradfxk.T)
+        # print("alphak:", alphak, 'stepsize', self.stepsize)
         while True:
             self.inner_its += 1
             self.total_bak = 0
@@ -173,15 +182,16 @@ class NatOG:
                     ytrial, projected_group = self._proj_norm_ball(
                         y_current - self.stepsize * grad_psi_ycurrent)
                     dual_val = prox_dual(self.A @ ytrial, uk, alphak)[0][0]
+                    # print("projected_group", projected_group)
                     # taking negative because we are doing projected gradient descent with respect to the
                     # negative of the dual objective, namely psi function
                     LHS = -(dual_val - dual_val_ycurrent)
                     RHS = (config['linesearch']['eta'] *
-                           (grad_psi_ycurrent.T @ (ytrial - y_current)))
-                    # print(
-                    #     f"its:{kwargs['iteration']:3d} | LHS:{LHS:.4e} | RHS:{RHS:.4e} | LHS-RHS:{LHS-RHS:.4e}")
-                    # break
-                    if LHS <= RHS:
+                           (grad_psi_ycurrent.T @ (ytrial - y_current)))[0][0]
+                    # if kwargs['iteration'] == 22:
+                    #     print(
+                    #         f"its:{kwargs['iteration']:3d} | LHS:{LHS:.4e} | RHS:{RHS:.4e} | LHS-RHS:{LHS-RHS:.4e}")
+                    if (LHS <= RHS) or (np.abs(LHS) < 1e-16 and np.abs(RHS) < 1e-16):
                         self.total_bak += bak
                         break
                     if bak > 100:
@@ -205,15 +215,17 @@ class NatOG:
             for i in range(self.K):
                 if i not in projected_group:
                     xtrial_proj[self.groups_dict[i]] = 0.0
-
+            # print("xtrial", xtrial.T)
+            # print("xtrial_proj", xtrial_proj.T)
             ######################### check for termination ###############################
             # first check the projected primal
+            rxtrial_proj = self.func(xtrial_proj)
             primal_val_proj = prox_primal(
-                xtrial_proj, uk, alphak, self.func(xtrial_proj))
+                xtrial_proj, uk, alphak, rxtrial_proj)
             gap = (primal_val_proj - dual_val)
             if not config['mainsolver']['exact_pg_computation']:
                 if inexact_pg_computation == 'yd':
-                    self.targap = ckplu1 * l2_norm(xtrial_proj - xk)
+                    self.targap = ckplu1 * l2_norm(xtrial_proj - xk) ** 2
                 elif inexact_pg_computation == 'lee':
                     self.targap = gamma * (primal_val_xk - dual_val)
                 elif inexact_pg_computation == 'schimdt':
@@ -224,19 +236,23 @@ class NatOG:
             if gap < self.targap:
                 xtrial = xtrial_proj
                 self.flag = 'desired'
+                self.rxtrial = rxtrial_proj
                 break
             # then check the un-projected primal
+            rxtrial = self.func(xtrial)
             primal_val = prox_primal(
-                xtrial, uk, alphak, self.func(xtrial))
+                xtrial, uk, alphak, rxtrial)
             gap = (primal_val - dual_val)
             if not config['mainsolver']['exact_pg_computation']:
                 if inexact_pg_computation == 'yd':
-                    self.targap = ckplu1 * l2_norm(xtrial - xk)
+                    self.targap = ckplu1 * l2_norm(xtrial - xk) ** 2
             if gap < self.targap:
                 self.flag = 'desired'
+                self.rxtrial = rxtrial
                 break
             if self.inner_its > config['subsolver']['iteration_limits']:
-                self.flag = 'maxiters'
+                self.flag = 'maxiter'
+                self.rxtrial = rxtrial
                 break
             # proceed to the next iteration
             y_current = ytrial
@@ -248,7 +264,7 @@ class NatOG:
         # post-processing
         self.gap = gap
         if not config['mainsolver']['exact_pg_computation'] and inexact_pg_computation == 'yd':
-            self.aoptim = self.targap / ckplu1
+            self.aoptim = np.sqrt(self.targap / ckplu1)
         else:
             self.aoptim = l2_norm(xtrial - xk)
         self.xtrial = xtrial
@@ -262,7 +278,7 @@ class NatOG:
         header = "  aoptim   its.   Flag "
         if config['mainsolver']['print_level'] == 2:
             header += " Stepsize  baks    Gap       tarGap "
-            header += "   #az  #anz |"
+            header += "   #pz  #pnz |"
         else:
             header += "|"
         return header

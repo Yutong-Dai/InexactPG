@@ -1,25 +1,24 @@
 # configuation for proximal gradient method
 mainsolver:
-  accuracy: 1.0e-5
+  accuracy: 1.0e-6
   iteration_limits: 10000
   time_limits: 3600.0 # in seconds
   log: True  # save logs to a file
   print_level: 2 # 0: print nothing; 1: print basics; 2:print everthing
-  print_every: 20 # print header every print_every iteration
-  check_point: False # save itermediate results
-  linesearch: False
+  print_every: 40 # print header every print_every iteration
+  linesearch: True
   # strategy for adjusting alphak
   # const: keep it unchanged
   # frac: reduce by a fraction when perform backtracking 
   # model: model based 
   # heuristic: tfocx like
-  stepsize_strategy: const
+  stepsize_strategy: heuristic
   # if the proximal gradient problem has closed-form solution, then compute it exactly
   # othwerwise solve it to high-accuracy, meaning duality gap is smaller than 
   # `exact_pg_computation_tol`;
   # if set to True, then the config for early termination conditions will be ignored
   exact_pg_computation: False
-  exact_pg_computation_tol: 1.0e-10
+  exact_pg_computation_tol: 1.0e-12
   # available options: schimdt, lee, yd 
   inexact_pg_computation: schimdt
 
@@ -35,7 +34,6 @@ subsolver:
 linesearch:
   eta: 1.0e-5
   xi: 0.5
-  zeta: 0.8
   beta: 1.1
 
 inexactpg:
