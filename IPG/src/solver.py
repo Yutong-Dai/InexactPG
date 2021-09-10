@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:28
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-10 12:21
+# Last Modified: 2021-09-10 10:59
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -68,6 +68,7 @@ class IpgSolver:
         else:
             milestone.append(self.config['mainsolver']['accuracy'])
             milestone = [*set(milestone)]
+            milestone.sort(reverse=True)
         # configure mainsolver
         if x_init is None:
             xk = np.zeros((self.p, 1))
