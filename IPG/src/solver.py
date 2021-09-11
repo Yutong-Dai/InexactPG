@@ -103,9 +103,9 @@ class IpgSolver:
             # compute ipg
             xaprox, ykplus1, self.aoptim = self.r.compute_inexact_proximal_gradient_update(
                 xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration)
-            if self.r.flag == 'lscfail':
-                self.status = -2
-                break
+            # if self.r.flag == 'lscfail':
+            #     self.status = -2
+            #     break
             self.time_so_far += time.time() - iteration_start - print_cost
             # print current iteration information
             self.subits += self.r.inner_its
@@ -175,13 +175,16 @@ class IpgSolver:
                     if inexact_pg_computation == 'yd' or inexact_pg_computation == 'lee':
                         lhs = fxtrial - fxk + rxtrial - rxk
                         rhs = self.stepsize * const
+                        # if self.r.flag == 'maxiter' or  self.iteration == 1697:
+                        #     print(f"its:{self.iteration:3d} | LHS:{lhs:.4e} | RHS:{rhs:.4e} | LHS-RHS:{lhs-rhs:.4e} | dirder_upper:{dirder_upper:.4e}")
                         if lhs <= rhs:
                             self.step_take = xtrial - xk
                             xk = xtrial
                             break
-                        if self.bak > 100:
+                        if self.stepsize <= 1e-20:
                             # linesearch failure
-                            self.status = -1
+                            # self.status = -1
+                            # print("mainsolver: small stepsize encountered in the linesearch for alphak")
                             self.step_take = xtrial - xk
                             xk = xtrial
                             break
@@ -203,9 +206,9 @@ class IpgSolver:
                             rxtrial = rxk
                             self.step_take = 0.0
                         break
-                # terminate the whole algorithm as linesearch failed
-                if self.status == -1:
-                    break
+                # # terminate the whole algorithm as linesearch failed
+                # if self.status == -1:
+                #     break
             else:
                 self.step_take = xaprox - xk
                 xk = xaprox
@@ -242,9 +245,10 @@ class IpgSolver:
                     self.alphak = 1.0 / L_kplus1
                 elif self.config['mainsolver']['stepsize_strategy'] == "heuristic":
                     if self.bak == 0:
-                        self.alphak *= self.config['linesearch']['beta']
+                        # add a safeguard
+                        self.alphak = min(self.alphak * self.config['linesearch']['beta'], 100)
                     else:
-                        self.alphak *= 0.8
+                        self.alphak = max(0.8*self.alphak, 1e-20)
                 elif self.config['mainsolver']['stepsize_strategy'] == "const":
                     pass
                 else:

@@ -130,6 +130,8 @@ if __name__ == "__main__":
                         help='params for inexact_type lee')
     parser.add_argument('--gamma_yd', default=0.1, type=float,
                         help='params for inexact_type yd')
+    parser.add_argument('--debug', default=False, type=lambda x: (
+        str(x).lower() in ['true', '1', 'yes']), help='debug mode')
 
     args = parser.parse_args()
     with open('../src/config.yaml', "r") as stream:
@@ -155,9 +157,14 @@ if __name__ == "__main__":
     if args.loss == 'logit':
         if not args.largedb:
             if platform.platform() == 'Darwin-16.7.0-x86_64-i386-64bit':
-                datasets = ["w8a"]
+                datasets = ["a9a", "w8a"]
             else:
-                datasets = ["colon_cancer"]
+                datasets = ["a9a", "colon_cancer", "duke",
+                            "leu", "mushrooms", "w8a"]
+            if args.debug:
+                print('debug mode!')
+                datasets = ["w8a"]
+                # datasets = ["duke"]
         else:
             datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
     else:

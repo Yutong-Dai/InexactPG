@@ -192,16 +192,18 @@ class NatOG:
                     #     print(
                     #         f"its:{kwargs['iteration']:3d} | LHS:{LHS:.4e} | RHS:{RHS:.4e} | LHS-RHS:{LHS-RHS:.4e}")
                     # polyps precision is low change 1e-16 to 1e-12
-                    if (LHS <= RHS) or (np.abs(LHS) < 1e-12 and np.abs(RHS) < 1e-12):
+                    if (LHS <= RHS) or (np.abs(np.abs(LHS) - np.abs(RHS)) < 1e-15):
                         self.total_bak += bak
                         break
-                    if bak > 100:
-                        self.aoptim = 1e9
-                        self.flag = 'lscfail'
-                        self.gap = 1e9
-                        self.targap = 1e9
+                    if self.stepsize < 1e-20:
+                        # self.aoptim = 1e9
+                        self.flag = 'smallstp'
+                        # self.gap = 1e9
+                        # self.targap = 1e9
                         self.total_bak += bak
-                        return None, None, 1e9
+                        # print("subsolver: small stepsize encountered!")
+                        break
+                        # return None, None, 1e9
                     self.stepsize *= config['linesearch']['xi']
                     bak += 1
             else:

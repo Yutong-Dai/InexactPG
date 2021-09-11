@@ -16,7 +16,7 @@ def create(task_name, outdir, scriptdir, finishdir, node, mem, file, *argv, pbsD
         outdir, task_name)
     contents += '#PBS -o /home/yud319/InexactPG/{}/{}.out\n'.format(
         outdir, task_name)
-    contents += '#PBS -l nodes={}:ppn=4\n'.format(node)
+    contents += '#PBS -l nodes={}:ppn=2\n'.format(node)
     contents += '#PBS -l mem={}gb,vmem={}gb\n'.format(mem, mem)
     contents += '#PBS -q long\n'
     contents += 'cd /home/yud319/InexactPG/{}\n'.format(scriptdir)
@@ -36,8 +36,8 @@ def create(task_name, outdir, scriptdir, finishdir, node, mem, file, *argv, pbsD
 if __name__ == '__main__':
     outdir = "IPG/test/log/cache"
     scriptdir = "IPG/test/"
-    finishdir = "/home/yud319/InexactPG/IPG/test/pbs/"
-    date = "09_10_2021"
+    finishdir = "/home/yud319/InexactPG/IPG/test/pbs"
+    date = "09_11_2021"
 
     inexact_type = 'schimdt'
     for loss in ['logit']:
