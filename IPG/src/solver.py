@@ -13,6 +13,11 @@
 # Date      	By 	Comments
 # ----------	---	----------------------------------------------------------
 # 2021-08-23	Y.D	create file. Implement algorithm.
+# 2021-09-17    Y.D Modify the Solver, which will record the best iterate encountered so far.
+                    The best iterate is defined in terms of the newest iterate, where
+                    the subsolver terminates successfully and  the trial iterate is accepted by the linesearch. 
+                    If encounter three consequtive maxiters for subsolver, and none of the corrected points are 
+                    accepted, then terminate algorithm
 '''
 import numpy as np
 import datetime
@@ -24,7 +29,7 @@ class IpgSolver:
     def __init__(self, f, r, config):
         self.f = f
         self.r = r
-        self.version = "0.1 (2021-08-29)"
+        self.version = "0.1 (2021-09-17)"
         self.n = self.f.n
         self.p = self.f.p
         self.config = config
@@ -74,12 +79,14 @@ class IpgSolver:
             xk = np.zeros((self.p, 1))
         else:
             xk = x_init
+        x_best_so_far = xk
         if not alpha_init:
             self.alphak = 1.0
         else:
             self.alphak = alpha_init
         # dual variable
         yk = None
+        # collect stats
         self.iteration = 0
         self.fevals = 0
         self.gevals = 0
@@ -90,11 +97,14 @@ class IpgSolver:
         fxk = self.f.func(xk)
         rxk = self.r.func(xk)
         self.Fxk = fxk + rxk
+        Fxk_best_so_far = self.Fxk
         gradfxk = self.f.grad(xk)
         self.fevals += 1
         self.gevals += 1
         inexact_pg_computation = self.config['mainsolver']['inexact_pg_computation']
         self.status = 404
+        self.subsolver_consequtive_maxiter = 0
+        self.subsolver_total_correct_iters = 0
         # config subsolver
         stepsize_init = None
         while True:
@@ -102,7 +112,7 @@ class IpgSolver:
             #     break
             # compute ipg
             xaprox, ykplus1, self.aoptim = self.r.compute_inexact_proximal_gradient_update(
-                xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration)
+                xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration, xref=x_best_so_far)
             # if self.r.flag == 'lscfail':
             #     self.status = -2
             #     break
@@ -136,7 +146,7 @@ class IpgSolver:
                     np.save(ckpt_dir +
                             "/{}_info.npy".format(self.datasetname), info)
             # check termination
-            if self.aoptim <= tol:
+            if self.aoptim + np.sqrt(self.r.targap) <= tol:
                 self.status = 0
                 break
 
@@ -146,6 +156,19 @@ class IpgSolver:
             if self.time_so_far >= self.config['mainsolver']['time_limits']:
                 self.status = 2
                 break
+            if self.r.flag == 'correct':
+                self.subsolver_total_correct_iters += 1
+                if self.subsolver_total_correct_iters >= 10:
+                    self.status = 4
+                    break
+            if self.r.flag == 'maxiter':
+                self.subsolver_consequtive_maxiter += 1
+                if self.subsolver_consequtive_maxiter == 3:
+                    self.status = 3
+                    break
+            else:
+                # reset counter
+                self.subsolver_consequtive_maxiter = 0
 
             # new iteration
             iteration_start = time.time()
@@ -246,9 +269,10 @@ class IpgSolver:
                 elif self.config['mainsolver']['stepsize_strategy'] == "heuristic":
                     if self.bak == 0:
                         # add a safeguard
-                        self.alphak = min(self.alphak * self.config['linesearch']['beta'], 100)
+                        self.alphak = min(
+                            self.alphak * self.config['linesearch']['beta'], 100)
                     else:
-                        self.alphak = max(0.8*self.alphak, 1e-20)
+                        self.alphak = max(0.8 * self.alphak, 1e-20)
                 elif self.config['mainsolver']['stepsize_strategy'] == "const":
                     pass
                 else:
@@ -262,9 +286,17 @@ class IpgSolver:
             gradfxk = self.f.grad(xk)
             self.fevals += 1 + self.bak
             self.gevals += 1
-        self.solution = xk
+            if self.r.flag != 'maxiter':
+                x_best_so_far = xk
+                Fxk_best_so_far = self.Fxk
+        if self.status != 3:
+            self.solution = xk
+        else:
+            self.solution = x_best_so_far
+            self.Fxk = Fxk_best_so_far
         self.print_exit()
-        nnz, nz = self.r._get_group_structure(xk)
+
+        nnz, nz = self.r._get_group_structure(self.solution)
         info = {'iteration': self.iteration, 'time': self.time_so_far,
                 'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
                 'status': self.status,
@@ -272,6 +304,7 @@ class IpgSolver:
                 'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
                 'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
                 }
+
         ckpt_dir = self.generate_ckpt_dir(
             save_ckpt_id, self.config['mainsolver']['accuracy'])
         np.save(ckpt_dir +
@@ -374,9 +407,9 @@ class IpgSolver:
         elif self.status == 2:
             contents += 'Exit: Time limit reached\n'
         elif self.status == 3:
-            contents += 'Exit: Active set identified\n'
+            contents += 'Exit: Early stoppiong. (Consequtive subsolver maxiters).\n'
         elif self.status == 4:
-            contents += 'Exit: Early stop as no further progress can be made.\n'
+            contents += 'Exit: Early stoppiong. (10 correction steps cap reached).\n'
         print(contents)
         contents += "\nFinal Results\n"
         contents += "=" * 30 + '\n'

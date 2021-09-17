@@ -30,14 +30,15 @@ loss = 'logit'
 datasetName = 'a9a'
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
-dbDir = '/Users/ym/Documents/GroupFaRSA/db/'
+# dbDir = '/Users/ym/Documents/GroupFaRSA/db/'
+dbDir = '../../../GroupFaRSA/db'
 X, y = utils.set_up_xy(datasetName, fileType, dbDir)
 if loss == 'logit':
     f = LogisticLoss(X, y, datasetName)
 
 p = X.shape[1]
 grp_size = 10
-overlap_ratio = 0.1
+overlap_ratio = 0.3
 grp_size = min(p // 2, grp_size)
 generator = utils.GenOverlapGroup(
     p, grp_size=grp_size, overlap_ratio=overlap_ratio)
@@ -100,6 +101,8 @@ with open('../src/config.yaml', "r") as stream:
     config = yaml.load(stream, Loader=yaml.SafeLoader)
 config['mainsolver']['exact_pg_computation'] = False
 config['mainsolver']['inexact_pg_computation'] = 'yd'
+# config['inexactpg']['yd']['gamma'] = 0.1
+# config['subsolver']['iteration_limits'] = 2
 solver = IpgSolver(f, r, config)
 info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
                     save_ckpt_id=save_ckpt_id, milestone=milestone)

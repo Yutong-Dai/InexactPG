@@ -163,8 +163,8 @@ if __name__ == "__main__":
                             "leu", "mushrooms", "w8a"]
             if args.debug:
                 print('debug mode!')
-                datasets = ["w8a"]
-                # datasets = ["duke"]
+                # datasets = ["w8a"]
+                datasets = ["duke"]
         else:
             datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
     else:

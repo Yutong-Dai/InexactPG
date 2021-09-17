@@ -113,7 +113,7 @@ class NatOG:
         return self._func_jit(x, self.groups, self.weights)
 
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _func_jit(x, groups, weights):
         ans = 0.0
         for i, g in enumerate(groups):
@@ -230,6 +230,7 @@ class NatOG:
                 if inexact_pg_computation == 'yd':
                     self.targap = ckplu1 * l2_norm(xtrial_proj - xk) ** 2
                 elif inexact_pg_computation == 'lee':
+                    # this is correct and I verified at 09/14/2021 using (12) in paper
                     self.targap = gamma * (primal_val_xk - dual_val)
                 elif inexact_pg_computation == 'schimdt':
                     pass
@@ -243,8 +244,7 @@ class NatOG:
                 break
             # then check the un-projected primal
             rxtrial = self.func(xtrial)
-            primal_val = prox_primal(
-                xtrial, uk, alphak, rxtrial)
+            primal_val = prox_primal(xtrial, uk, alphak, rxtrial)
             gap = (primal_val - dual_val)
             if not config['mainsolver']['exact_pg_computation']:
                 if inexact_pg_computation == 'yd':
@@ -255,6 +255,17 @@ class NatOG:
                 break
             if self.inner_its > config['subsolver']['iteration_limits']:
                 self.flag = 'maxiter'
+                # attemp a correction step
+                x_correction = self.correction_step(xtrial, kwargs['xref'])
+                rx_correction = self.func(x_correction)
+                primal_val_correction = prox_primal(
+                    x_correction, uk, alphak, rx_correction)
+                gap_corrected = primal_val_correction - dual_val
+                if primal_val_correction <= primal_val:
+                    xtrial = x_correction
+                    gap = gap_corrected
+                    rxtrial = rx_correction
+                    self.flag = 'correct'
                 self.rxtrial = rxtrial
                 break
             # proceed to the next iteration
@@ -266,7 +277,7 @@ class NatOG:
                 self.stepsize *= config['linesearch']['beta']
         # post-processing
         self.gap = gap
-        if not config['mainsolver']['exact_pg_computation'] and inexact_pg_computation == 'yd':
+        if not config['mainsolver']['exact_pg_computation'] and inexact_pg_computation == 'yd' and self.flag != 'maxiter':
             self.aoptim = np.sqrt(self.targap / ckplu1)
         else:
             self.aoptim = l2_norm(xtrial - xk)
@@ -309,6 +320,18 @@ class NatOG:
                 nz += 1
         nnz = K - nz
         return nnz, nz
+
+    def correction_step(self, x, xref):
+        return self._correction_step_jit(x, xref, self.groups)
+
+    @staticmethod
+    @jit(nopython=True, cache=True)
+    def _correction_step_jit(x, xref, groups):
+        x_corrected = x.copy()
+        for g in groups:
+            if np.sum(np.abs(xref[g])) == 0:
+                x_corrected[g] = 0.0
+        return x_corrected
 
 
 """
@@ -363,7 +386,7 @@ if SPAM_EXISTS:
             return self._func_jit(x, self.groups, self.weights)
 
         @staticmethod
-        @jit(nopython=True)
+        @jit(nopython=True, cache=True)
         def _func_jit(x, groups, weights):
             ans = 0.0
             for i, g in enumerate(groups):
@@ -474,7 +497,7 @@ class GL1:
         return self._func_jit(X, self.K, self.starts, self.ends, self.weights)
 
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _func_jit(X, K, starts, ends, weights):
         fval = 0.0
         for i in range(K):
@@ -492,7 +515,7 @@ class GL1:
         return self._grad_jit(X, self.K, self.starts, self.ends, self.weights)
 
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _grad_jit(X, K, starts, ends, weights):
         grad = np.full(X.shape, np.inf)
         for i in range(K):
@@ -545,7 +568,7 @@ class GL1:
         return self._dual_norm_jit(y, self.K, self.starts, self.ends, self.weights)
 
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _dual_norm_jit(y, K, starts, ends, weights):
         max_group_norm = 0.0
         for i in range(K):
