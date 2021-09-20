@@ -1,6 +1,7 @@
 # configuation for proximal gradient method
 mainsolver:
   accuracy: 1.0e-6
+  optim_scaled: False
   iteration_limits: 10000
   time_limits: 3600.0 # in seconds
   log: True  # save logs to a file

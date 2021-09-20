@@ -37,8 +37,8 @@ if loss == 'logit':
     f = LogisticLoss(X, y, datasetName)
 
 p = X.shape[1]
-grp_size = 10
-overlap_ratio = 0.3
+grp_size = 100
+overlap_ratio = 0.2
 grp_size = min(p // 2, grp_size)
 generator = utils.GenOverlapGroup(
     p, grp_size=grp_size, overlap_ratio=overlap_ratio)
@@ -74,16 +74,17 @@ alpha_init = 1.0
 # print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
 # # print(info['x'].T)
 
-# print("Inexact subprobsolve: schimdt")
-# with open('../src/config.yaml', "r") as stream:
-#     config = yaml.load(stream, Loader=yaml.SafeLoader)
-# config['mainsolver']['exact_pg_computation'] = False
-# config['mainsolver']['inexact_pg_computation'] = 'schimdt'
-# solver = IpgSolver(f, r, config)
-# info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
-#                     save_ckpt_id=save_ckpt_id, milestone=milestone)
-# print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
-# # print(info['x'].T)
+print("Inexact subprobsolve: schimdt")
+with open('../src/config.yaml', "r") as stream:
+    config = yaml.load(stream, Loader=yaml.SafeLoader)
+config['mainsolver']['exact_pg_computation'] = False
+config['mainsolver']['inexact_pg_computation'] = 'schimdt'
+config['inexactpg']['schimdt']['c'] = 1e4
+solver = IpgSolver(f, r, config)
+info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
+                    save_ckpt_id=save_ckpt_id, milestone=milestone)
+print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
+# print(info['x'].T)
 
 # print("Inexact subprobsolve: lee")
 # with open('../src/config.yaml', "r") as stream:
@@ -96,15 +97,15 @@ alpha_init = 1.0
 # print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
 # # print(info['x'].T)
 
-print("Inexact subprobsolve: yd")
-with open('../src/config.yaml', "r") as stream:
-    config = yaml.load(stream, Loader=yaml.SafeLoader)
-config['mainsolver']['exact_pg_computation'] = False
-config['mainsolver']['inexact_pg_computation'] = 'yd'
-# config['inexactpg']['yd']['gamma'] = 0.1
-# config['subsolver']['iteration_limits'] = 2
-solver = IpgSolver(f, r, config)
-info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
-                    save_ckpt_id=save_ckpt_id, milestone=milestone)
-print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
+# print("Inexact subprobsolve: yd")
+# with open('../src/config.yaml', "r") as stream:
+#     config = yaml.load(stream, Loader=yaml.SafeLoader)
+# config['mainsolver']['exact_pg_computation'] = False
+# config['mainsolver']['inexact_pg_computation'] = 'yd'
+# # config['inexactpg']['yd']['gamma'] = 0.1
+# # config['subsolver']['iteration_limits'] = 2
+# solver = IpgSolver(f, r, config)
+# info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
+#                     save_ckpt_id=save_ckpt_id, milestone=milestone)
+# print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
 # print(info['x'].T)

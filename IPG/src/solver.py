@@ -84,6 +84,7 @@ class IpgSolver:
             self.alphak = 1.0
         else:
             self.alphak = alpha_init
+        tol = self.config['mainsolver']['accuracy']
         # dual variable
         yk = None
         # collect stats
@@ -108,8 +109,8 @@ class IpgSolver:
         # config subsolver
         stepsize_init = None
         while True:
-            # if self.iteration >= 5:
-            #     break
+            # if self.iteration >= 1000:
+            #     print(self.iteration)
             # compute ipg
             xaprox, ykplus1, self.aoptim = self.r.compute_inexact_proximal_gradient_update(
                 xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration, xref=x_best_so_far)
@@ -123,30 +124,32 @@ class IpgSolver:
                 if self.iteration % self.config['mainsolver']['print_every'] == 0:
                     self.print_header()
                 self.print_iteration()
-
-            if self.iteration == 0:
-                tol = max(1.0, self.aoptim) * \
-                    self.config['mainsolver']['accuracy']
-                # rescale milestone
-                milestone_scaled = [
-                    max(1.0, self.aoptim) * i for i in milestone]
+            self.optim = self.aoptim + np.sqrt(2 * self.r.targap * self.alphak)
             if save_ckpt:
-                if self.aoptim <= milestone_scaled[0]:
+                if self.config['mainsolver']['optim_scaled']:
+                    milestone_scaled = milestone[0] * self.alphak
+                else:
+                    milestone_scaled = milestone[0]
+                if self.optim <= milestone_scaled:
                     nnz, nz = self.r._get_group_structure(xk)
                     info = {'iteration': self.iteration, 'time': self.time_so_far,
                             'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
                             'status': self.status,
-                            'fevals': self.fevals, 'gevals': self.gevals, 'optim': self.aoptim,
+                            'fevals': self.fevals, 'gevals': self.gevals, 'aoptim': self.aoptim,
                             'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
-                            'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
+                            'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid,
+                            'optim': self.optim
                             }
-                    milestone_scaled.pop(0)
                     ckpt_tol = milestone.pop(0)
                     ckpt_dir = self.generate_ckpt_dir(save_ckpt_id, ckpt_tol)
                     np.save(ckpt_dir +
                             "/{}_info.npy".format(self.datasetname), info)
             # check termination
-            if self.aoptim + np.sqrt(self.r.targap) <= tol:
+            if self.config['mainsolver']['optim_scaled']:
+                tol_scaled = tol * self.alphak
+            else:
+                tol_scaled = tol
+            if self.optim <= tol_scaled:
                 self.status = 0
                 break
 
@@ -300,9 +303,10 @@ class IpgSolver:
         info = {'iteration': self.iteration, 'time': self.time_so_far,
                 'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
                 'status': self.status,
-                'fevals': self.fevals, 'gevals': self.gevals, 'optim': self.aoptim,
+                'fevals': self.fevals, 'gevals': self.gevals, 'aoptim': self.aoptim,
                 'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
-                'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
+                'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid,
+                'optim': self.optim
                 }
 
         ckpt_dir = self.generate_ckpt_dir(
@@ -335,7 +339,7 @@ class IpgSolver:
     def print_config(self):
         contents = "\n" + "Algorithm Parameters:\n"
         contents += 'Termination Conditions:'
-        contents += f" accuracy: {self.config['mainsolver']['accuracy']} | time limits:{self.config['mainsolver']['time_limits']} | iteration limits:{self.config['mainsolver']['iteration_limits']}\n"
+        contents += f" accuracy: {self.config['mainsolver']['accuracy']} | optim scaled: {self.config['mainsolver']['optim_scaled']} | time limits:{self.config['mainsolver']['time_limits']} | iteration limits:{self.config['mainsolver']['iteration_limits']}\n"
         if self.config['mainsolver']['exact_pg_computation']:
             contents += f"Evaluate proximal operator with high accuracy: {self.config['mainsolver']['exact_pg_computation_tol']}\n"
         else:
@@ -418,7 +422,7 @@ class IpgSolver:
         nnz, nz = self.r._get_group_structure(self.solution)
         contents += f'# zero groups:{"":.>62}{nz:d}\n'
         contents += f'Objective function:{"":.>57}{self.Fxk:8.6e}\n'
-        contents += f'Optimality error:{"":.>59}{self.aoptim:8.6e}\n'
+        contents += f'Optimality error:{"":.>59}{self.optim:8.6e}\n'
         contents += f'Function evaluations:{"":.>55}{self.fevals:d}\n'
         contents += f'Gradient evaluations:{"":.>55}{self.gevals:d}\n'
 

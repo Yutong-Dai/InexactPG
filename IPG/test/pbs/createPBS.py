@@ -37,7 +37,12 @@ if __name__ == '__main__':
     outdir = "IPG/test/log/cache"
     scriptdir = "IPG/test/"
     finishdir = "/home/yud319/InexactPG/IPG/test/pbs"
-    date = "09_11_2021"
+    # date = "09_17_2021"
+    date = "09_19_2021"
+    tol = 1e-6
+    # tol_scaled = False
+    tol_scaled = True
+    largedb = False
 
     inexact_type = 'schimdt'
     for loss in ['logit']:
@@ -53,12 +58,14 @@ if __name__ == '__main__':
                                'runall.py',
                                f'--date {date}',
                                f'--loss {loss}',
+                               f'--tol {tol}',
+                               f'--tol_scaled {tol_scaled}',
                                f'--lam_shrink {lam_shrink}',
                                f'--group_size {group_size}',
                                f'--overlap_ratio {overlap_ratio}',
                                f'--max_time {7200}',
                                f'--inexact_type {inexact_type}',
-                               f'--largedb False',
+                               f'--largedb {largedb}',
                                f'--c {c}')
 
     inexact_type = 'lee'
@@ -75,12 +82,14 @@ if __name__ == '__main__':
                                'runall.py',
                                f'--date {date}',
                                f'--loss {loss}',
+                               f'--tol {tol}',
+                               f'--tol_scaled {tol_scaled}',
                                f'--lam_shrink {lam_shrink}',
                                f'--group_size {group_size}',
                                f'--overlap_ratio {overlap_ratio}',
                                f'--max_time {7200}',
                                f'--inexact_type {inexact_type}',
-                               f'--largedb False',
+                               f'--largedb {largedb}',
                                f'--gamma_lee {gamma}')
     inexact_type = 'yd'
     for loss in ['logit']:
@@ -96,10 +105,12 @@ if __name__ == '__main__':
                                'runall.py',
                                f'--date {date}',
                                f'--loss {loss}',
+                               f'--tol {tol}',
+                               f'--tol_scaled {tol_scaled}',
                                f'--lam_shrink {lam_shrink}',
                                f'--group_size {group_size}',
                                f'--overlap_ratio {overlap_ratio}',
                                f'--max_time {7200}',
                                f'--inexact_type {inexact_type}',
-                               f'--largedb False',
+                               f'--largedb {largedb}',
                                f'--gamma_yd {gamma}')

@@ -7,12 +7,15 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 from matplotlib import rc
 def create_paths(logdir='../IPG/test/log', date='09_10_2021', inexact_type='lee', loss='logit',
-                 tol = 1e-6, lam_shrink=[0.1], group_size=[10], overlap_ratio=[0.1], excludes=None, **kwargs):
+                 use_ckpt=True, tol = 1e-6, lam_shrink=[0.1], group_size=[10], overlap_ratio=[0.1], excludes=None, **kwargs):
     list_all_npy_path = []
     for lam in lam_shrink:
         for grp in group_size:
             for r in overlap_ratio:
-                minimal_dir = f'{logdir}/{date}/{inexact_type}/{loss}/ckpt/{tol}/{lam}_{grp}_{r}'
+                if use_ckpt:
+                    minimal_dir = f'{logdir}/{date}/{inexact_type}/{loss}/ckpt/{tol}/{lam}_{grp}_{r}'
+                else:
+                    minimal_dir = f'{logdir}/{date}/{inexact_type}/{loss}/logfile/{lam}_{grp}_{r}'
                 for key, value in kwargs.items():
                     minimal_dir += f'_{kwargs[key]}'
                 datasets = glob.glob(f'{minimal_dir}/*.npy')
@@ -48,14 +51,14 @@ def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', '
         print(f" {count:{formatter}}/{df.shape[0]} instances terminate with status: {code:2d}")
     return df
 
-def get_all(logdir, date, inexact_type, loss, tol,
+def get_all(logdir, date, inexact_type, loss, use_ckpt, tol,
             lam_shrink, group_size, overlap_ratio,
             excludes=None, param_lst=None):
     algo_df_dict = {}
     for p in param_lst:
             algorithm = f'{inexact_type}-{p}'
             print(f'{algorithm}')
-            paths = create_paths(logdir, date, inexact_type, loss, tol, 
+            paths = create_paths(logdir, date, inexact_type, loss, use_ckpt, tol, 
                                  lam_shrink, group_size, overlap_ratio, excludes, p=p)
             if paths == []:
                 print(' empty')

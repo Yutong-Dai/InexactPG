@@ -116,8 +116,11 @@ if __name__ == "__main__":
                         help='number of variables per group')
     parser.add_argument('--overlap_ratio', default=0.1,
                         type=float, help='overlap ratio for each groups')
-    parser.add_argument('--tol', default=1e-6, type=float,
+    parser.add_argument('--tol', default=1e-5, type=float,
                         help='desired accuracy')
+    parser.add_argument('--tol_scaled', default=False, type=lambda x: (
+        str(x).lower() in ['true', '1', 'yes']),
+        help='scale the tolearance by stepszie')
     parser.add_argument('--max_time', default=7200,
                         type=int, help='max time in seconds')
     parser.add_argument('--inexact_type', default='yd',
@@ -151,6 +154,7 @@ if __name__ == "__main__":
             raise ValueError(f"Unrecognized inexact_type:{args.inexact_type}!")
 
     config['mainsolver']['accuracy'] = args.tol
+    config['mainsolver']['optim_scaled'] = args.tol_scaled
     config['mainsolver']['time_limits'] = args.max_time
     save_ckpt = True
     milestone = [1e-3, 1e-4, 1e-5]
@@ -163,8 +167,8 @@ if __name__ == "__main__":
                             "leu", "mushrooms", "w8a"]
             if args.debug:
                 print('debug mode!')
-                # datasets = ["w8a"]
-                datasets = ["duke"]
+                datasets = ["w8a"]
+                # datasets = ["duke"]
         else:
             datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
     else:
@@ -180,3 +184,6 @@ if __name__ == "__main__":
         # polyps run
         runall(args.date, args.inexact_type, args.loss, args.lam_shrink, args.group_size, args.overlap_ratio,
                datasets, '../../../GroupFaRSA/db', config, save_ckpt, milestone)
+
+
+# python runall.py --date 09_17_2021 --inexact_type yd --gamma_yd 0.1 --lam_shrink 0.1 --group_size 100 --overlap_ratio 0.3 --debug True --tol 1e-4
