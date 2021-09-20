@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:28
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-10 11:40
+# Last Modified: 2021-09-20 12:50
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -108,6 +108,7 @@ class IpgSolver:
         self.subsolver_total_correct_iters = 0
         # config subsolver
         stepsize_init = None
+        beta = self.config['linesearch']['beta']
         while True:
             # if self.iteration >= 1000:
             #     print(self.iteration)
@@ -221,7 +222,10 @@ class IpgSolver:
                         rxtrial = self.r.func(xtrial)
                     else:
                         # test Lipschtiz inequality for exact solve and the schimdt inexact solve
-                        if (fxtrial - fxk <= (np.sum(gradfxk * self.d) + 1.0 / (2.0 * self.alphak) * (self.d_norm**2))):
+                        l_lhs = fxtrial - fxk
+                        l_rhs = np.sum(gradfxk * self.d) + 1.0 / \
+                            (2.0 * self.alphak) * (self.d_norm**2)
+                        if (l_lhs <= l_rhs) or (np.abs(l_lhs - l_rhs) <= 1e-15):
                             self.step_take = xtrial - xk
                             xk = xtrial
                         else:
@@ -231,6 +235,8 @@ class IpgSolver:
                             fxtrial = self.f.func(xk)
                             rxtrial = rxk
                             self.step_take = 0.0
+                        if self.aoptim <= 1e-8:
+                            beta = 1.0
                         break
                 # # terminate the whole algorithm as linesearch failed
                 # if self.status == -1:
@@ -273,7 +279,7 @@ class IpgSolver:
                     if self.bak == 0:
                         # add a safeguard
                         self.alphak = min(
-                            self.alphak * self.config['linesearch']['beta'], 100)
+                            self.alphak * beta, 100)
                     else:
                         self.alphak = max(0.8 * self.alphak, 1e-20)
                 elif self.config['mainsolver']['stepsize_strategy'] == "const":
