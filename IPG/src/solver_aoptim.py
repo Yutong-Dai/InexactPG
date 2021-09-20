@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:28
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-20 12:50
+# Last Modified: 2021-09-20 1:31
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -419,7 +419,7 @@ class IpgSolver:
         nnz, nz = self.r._get_group_structure(self.solution)
         contents += f'# zero groups:{"":.>62}{nz:d}\n'
         contents += f'Objective function:{"":.>57}{self.Fxk:8.6e}\n'
-        contents += f'Optimality error:{"":.>59}{self.optim:8.6e}\n'
+        contents += f'Optimality error:{"":.>59}{self.aoptim:8.6e}\n'
         contents += f'Function evaluations:{"":.>55}{self.fevals:d}\n'
         contents += f'Gradient evaluations:{"":.>55}{self.gevals:d}\n'
 
