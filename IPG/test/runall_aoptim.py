@@ -4,7 +4,7 @@
 # Created Date: 2021-09-09 11:59
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-10 12:26
+# Last Modified: 2021-09-20 1:30
 # Modified By: Yutong Dai yutongdai95@gmail.com
 # 
 # This code is published under the MIT License.
@@ -167,7 +167,7 @@ if __name__ == "__main__":
                             "leu", "mushrooms", "w8a"]
             if args.debug:
                 print('debug mode!')
-                datasets = ["w8a"]
+                datasets = ["a9a"]
                 # datasets = ["duke"]
         else:
             datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
@@ -186,4 +186,5 @@ if __name__ == "__main__":
                datasets, '../../../GroupFaRSA/db', config, save_ckpt, milestone)
 
 
-# python runall.py --date 09_17_2021 --inexact_type yd --gamma_yd 0.1 --lam_shrink 0.1 --group_size 100 --overlap_ratio 0.3 --debug True --tol 1e-4
+# python runall_aoptim.py --date 09_20_2021 --inexact_type yd --gamma_yd 0.1 --lam_shrink 0.1 --group_size 100 --overlap_ratio 0.3 --debug True --tol 1e-6
+# python runall_aoptim.py --date 09_20_2021 --inexact_type schimdt --c 1e4 --lam_shrink 0.1 --group_size 100 --overlap_ratio 0.3 --debug True --tol 1e-6
