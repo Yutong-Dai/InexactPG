@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:28
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-09-20 12:50
+# Last Modified: 2021-09-10 11:40
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -13,12 +13,10 @@
 # Date      	By 	Comments
 # ----------	---	----------------------------------------------------------
 # 2021-08-23	Y.D	create file. Implement algorithm.
-# 2021-09-17    Y.D Modify the Solver, which will record the best iterate encountered so far.
+# 2021-09-20    Y.D Modify the Solver, which will record the best iterate encountered so far.
                     The best iterate is defined in terms of the newest iterate, where
                     the subsolver terminates successfully and  the trial iterate is accepted by the linesearch. 
-                    If encounter three consequtive maxiters for subsolver, and none of the corrected points are 
-                    accepted, then terminate algorithm
-# 2021-09-20    Y.D Terminate Algorithm by self.aoptim                    
+                    If encounter 2 consequtive maxiters for subsolver, then terminate algorithm.
 '''
 import numpy as np
 import datetime
@@ -30,7 +28,7 @@ class IpgSolver:
     def __init__(self, f, r, config):
         self.f = f
         self.r = r
-        self.version = "0.1 (2021-09-17)"
+        self.version = "0.1 (2021-09-20)"
         self.n = self.f.n
         self.p = self.f.p
         self.config = config
@@ -80,15 +78,13 @@ class IpgSolver:
             xk = np.zeros((self.p, 1))
         else:
             xk = x_init
-        x_best_so_far = xk
         if not alpha_init:
             self.alphak = 1.0
         else:
             self.alphak = alpha_init
-        tol = self.config['mainsolver']['accuracy']
+        x_best_so_far = xk
         # dual variable
         yk = None
-        # collect stats
         self.iteration = 0
         self.fevals = 0
         self.gevals = 0
@@ -99,23 +95,23 @@ class IpgSolver:
         fxk = self.f.func(xk)
         rxk = self.r.func(xk)
         self.Fxk = fxk + rxk
-        Fxk_best_so_far = self.Fxk
+        Fx_best_so_far = self.Fxk
         gradfxk = self.f.grad(xk)
         self.fevals += 1
         self.gevals += 1
         inexact_pg_computation = self.config['mainsolver']['inexact_pg_computation']
         self.status = 404
         self.subsolver_consequtive_maxiter = 0
-        self.subsolver_total_correct_iters = 0
+        beta = self.config['linesearch']['beta']
         # config subsolver
         stepsize_init = None
-        beta = self.config['linesearch']['beta']
+        tol = self.config['mainsolver']['accuracy']
         while True:
-            # if self.iteration >= 1000:
-            #     print(self.iteration)
+            # if self.iteration >= 5:
+            #     break
             # compute ipg
             xaprox, ykplus1, self.aoptim = self.r.compute_inexact_proximal_gradient_update(
-                xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration, xref=x_best_so_far)
+                xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration)
             # if self.r.flag == 'lscfail':
             #     self.status = -2
             #     break
@@ -126,16 +122,16 @@ class IpgSolver:
                 if self.iteration % self.config['mainsolver']['print_every'] == 0:
                     self.print_header()
                 self.print_iteration()
+
             if save_ckpt:
-                milestone_scaled = milestone[0]
-                if self.aoptim <= milestone_scaled:
+                if self.aoptim <= milestone[0]:
                     nnz, nz = self.r._get_group_structure(xk)
                     info = {'iteration': self.iteration, 'time': self.time_so_far,
                             'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
                             'status': self.status,
                             'fevals': self.fevals, 'gevals': self.gevals, 'optim': self.aoptim,
                             'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
-                            'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid,
+                            'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
                             }
                     ckpt_tol = milestone.pop(0)
                     ckpt_dir = self.generate_ckpt_dir(save_ckpt_id, ckpt_tol)
@@ -152,20 +148,16 @@ class IpgSolver:
             if self.time_so_far >= self.config['mainsolver']['time_limits']:
                 self.status = 2
                 break
-            if self.r.flag == 'correct':
-                self.subsolver_total_correct_iters += 1
-                if self.subsolver_total_correct_iters >= 3:
-                    self.status = 4
-                    break
             if self.r.flag == 'maxiter':
                 self.subsolver_consequtive_maxiter += 1
-                if self.subsolver_consequtive_maxiter >= 3:
-                    self.status = 3
-                    break
             else:
-                # reset counter
                 self.subsolver_consequtive_maxiter = 0
-
+            if self.subsolver_consequtive_maxiter >= 2:
+                self.status = 5
+                xk = x_best_so_far
+                self.Fxk = Fx_best_so_far
+                self.aoptim = aoptim_best_so_far
+                break
             # new iteration
             iteration_start = time.time()
             self.iteration += 1
@@ -271,7 +263,7 @@ class IpgSolver:
                     if self.bak == 0:
                         # add a safeguard
                         self.alphak = min(
-                            self.alphak * beta, 100)
+                            self.alphak * self.config['linesearch']['beta'], 100)
                     else:
                         self.alphak = max(0.8 * self.alphak, 1e-20)
                 elif self.config['mainsolver']['stepsize_strategy'] == "const":
@@ -287,17 +279,13 @@ class IpgSolver:
             gradfxk = self.f.grad(xk)
             self.fevals += 1 + self.bak
             self.gevals += 1
-            if self.r.flag != 'maxiter':
+            if self.r.flag == 'desired':
                 x_best_so_far = xk
-                Fxk_best_so_far = self.Fxk
-        if self.status != 3:
-            self.solution = xk
-        else:
-            self.solution = x_best_so_far
-            self.Fxk = Fxk_best_so_far
+                Fx_best_so_far = self.Fxk
+                aoptim_best_so_far = self.aoptim
+        self.solution = xk
         self.print_exit()
-
-        nnz, nz = self.r._get_group_structure(self.solution)
+        nnz, nz = self.r._get_group_structure(xk)
         info = {'iteration': self.iteration, 'time': self.time_so_far,
                 'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
                 'status': self.status,
@@ -305,7 +293,6 @@ class IpgSolver:
                 'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
                 'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid
                 }
-
         ckpt_dir = self.generate_ckpt_dir(
             save_ckpt_id, self.config['mainsolver']['accuracy'])
         np.save(ckpt_dir +
@@ -336,7 +323,7 @@ class IpgSolver:
     def print_config(self):
         contents = "\n" + "Algorithm Parameters:\n"
         contents += 'Termination Conditions:'
-        contents += f" accuracy: {self.config['mainsolver']['accuracy']} | optim scaled: {self.config['mainsolver']['optim_scaled']} | time limits:{self.config['mainsolver']['time_limits']} | iteration limits:{self.config['mainsolver']['iteration_limits']}\n"
+        contents += f" accuracy: {self.config['mainsolver']['accuracy']} | time limits:{self.config['mainsolver']['time_limits']} | iteration limits:{self.config['mainsolver']['iteration_limits']}\n"
         if self.config['mainsolver']['exact_pg_computation']:
             contents += f"Evaluate proximal operator with high accuracy: {self.config['mainsolver']['exact_pg_computation_tol']}\n"
         else:
@@ -407,10 +394,10 @@ class IpgSolver:
             contents += 'Exit: Iteration limit reached\n'
         elif self.status == 2:
             contents += 'Exit: Time limit reached\n'
-        elif self.status == 3:
-            contents += 'Exit: Early stoppiong. (Consequtive subsolver maxiters).\n'
+        elif self.status == 5:
+            contents += 'Exit: Two consequitive subsolver itermax encountered. Return the best solution encountered so far.\n'
         elif self.status == 4:
-            contents += 'Exit: Early stoppiong. (10 correction steps cap reached).\n'
+            contents += 'Exit: Early stop as no further progress can be made.\n'
         print(contents)
         contents += "\nFinal Results\n"
         contents += "=" * 30 + '\n'

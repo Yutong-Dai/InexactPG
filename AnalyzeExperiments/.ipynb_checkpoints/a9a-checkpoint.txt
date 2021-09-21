@@ -1,0 +1,18 @@
+
+================================================================================
+       Inexact Proximal Gradient Type Method   (version:0.1 (2021-09-20))  
+================================================================================
+Problem Summary: Excuted at 2021-9-20 23:36
+Dataset:.............................................a9a
+Data Size:......................................n=32561, p=123
+Loss Function:..................................Logistic
+Regularizer:....................................Overlapping Group L1
+Penalty Parameter:..............................lambda=0.0135
+Number of groups:..............................16
+
+Algorithm Parameters:
+Termination Conditions: accuracy: 1e-06 | time limits:3600.0 | iteration limits:10000
+Inexact Strategy: schimdt: delta:3.000e+00 | c:1.000e+04
+Lineserch Parameters: eta:1e-05 | xi:0.5 | beta:1.1
+Proximal Stepsize update: heuristic
+****************************************************************************************************

@@ -39,7 +39,7 @@ def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', '
         df = pd.DataFrame(info_lst)[cols]
     except KeyError:
         cols_ = cols.copy()
-        cols_[cols_.index('F')] = 'f'
+        cols_[cols_.index('optim')] = 'aoptim'
         df = pd.DataFrame(info_lst)[cols_]
     # summarize status
     codes = df['status'].unique()
@@ -281,3 +281,18 @@ def get_best(pools):
                 else:
                     max_key = val[3]
         return max_key
+    
+def collect_time(df_dict):
+    lst = []
+    for key in df_dict.keys():
+        df_ = df_dict[key]
+        time_ = np.sum(df_['time'])
+        lst.append(time_)
+    return lst
+def prepare_box(df_dict):
+    lst = []
+    for key in df_dict.keys():
+        df_ = df_dict[key]
+        time_ = df_['time'].to_numpy()
+        lst.append(time_)
+    return lst

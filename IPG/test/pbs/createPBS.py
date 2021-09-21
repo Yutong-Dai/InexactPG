@@ -38,14 +38,16 @@ if __name__ == '__main__':
     scriptdir = "IPG/test/"
     finishdir = "/home/yud319/InexactPG/IPG/test/pbs"
     # date = "09_17_2021"
-    date = "09_20_2021"
+    # date = "09_20_2021"
+    date = "09_21_2021"
     tol = 1e-6
     # tol_scaled = False
     tol_scaled = True
     largedb = False
     use_aoptim = True
     if use_aoptim:
-        script_name = 'runall_aoptim.py'
+        # script_name = 'runall_aoptim.py'
+        script_name = 'runall_nocorrection.py'
     else:
         script_name = 'runall.py'
 
@@ -54,8 +56,11 @@ if __name__ == '__main__':
         for lam_shrink in [0.1, 0.01]:
             for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.2, 0.3]:
-                    for c in [1e0, 1e-1, 1e-2, 1e-3, 1e-4]:
-                        # for c in [1e0, 1e1, 1e2, 1e3, 1e4]:
+                    if use_aoptim:
+                        clts = [1e0, 1e1, 1e2, 1e3, 1e4]
+                    else:
+                        clts = [1e0, 1e-1, 1e-2, 1e-3, 1e-4]
+                    for c in clts:
                         create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{c}',
                                outdir,
                                scriptdir,
@@ -74,49 +79,49 @@ if __name__ == '__main__':
                                f'--largedb {largedb}',
                                f'--c {c}')
 
-    # inexact_type = 'lee'
-    # for loss in ['logit']:
-    #     for lam_shrink in [0.1, 0.01]:
-    #         for group_size in [10, 100]:
-    #             for overlap_ratio in [0.1, 0.2, 0.3]:
-    #                 for gamma in [0.1, 0.2, 0.3, 0.4, 0.5]:
-    #                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{gamma}',
-    #                            outdir,
-    #                            scriptdir,
-    #                            finishdir,
-    #                            '1', '4',
-    #                            script_name,
-    #                            f'--date {date}',
-    #                            f'--loss {loss}',
-    #                            f'--tol {tol}',
-    #                            f'--tol_scaled {tol_scaled}',
-    #                            f'--lam_shrink {lam_shrink}',
-    #                            f'--group_size {group_size}',
-    #                            f'--overlap_ratio {overlap_ratio}',
-    #                            f'--max_time {7200}',
-    #                            f'--inexact_type {inexact_type}',
-    #                            f'--largedb {largedb}',
-    #                            f'--gamma_lee {gamma}')
-    # inexact_type = 'yd'
-    # for loss in ['logit']:
-    #     for lam_shrink in [0.1, 0.01]:
-    #         for group_size in [10, 100]:
-    #             for overlap_ratio in [0.1, 0.2, 0.3]:
-    #                 for gamma in [0.1, 0.2, 0.3, 0.4, 0.5]:
-    #                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{gamma}',
-    #                            outdir,
-    #                            scriptdir,
-    #                            finishdir,
-    #                            '1', '4',
-    #                            script_name,
-    #                            f'--date {date}',
-    #                            f'--loss {loss}',
-    #                            f'--tol {tol}',
-    #                            f'--tol_scaled {tol_scaled}',
-    #                            f'--lam_shrink {lam_shrink}',
-    #                            f'--group_size {group_size}',
-    #                            f'--overlap_ratio {overlap_ratio}',
-    #                            f'--max_time {7200}',
-    #                            f'--inexact_type {inexact_type}',
-    #                            f'--largedb {largedb}',
-    #                            f'--gamma_yd {gamma}')
+    inexact_type = 'lee'
+    for loss in ['logit']:
+        for lam_shrink in [0.1, 0.01]:
+            for group_size in [10, 100]:
+                for overlap_ratio in [0.1, 0.2, 0.3]:
+                    for gamma in [0.1, 0.2, 0.3, 0.4, 0.5]:
+                        create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{gamma}',
+                               outdir,
+                               scriptdir,
+                               finishdir,
+                               '1', '4',
+                               script_name,
+                               f'--date {date}',
+                               f'--loss {loss}',
+                               f'--tol {tol}',
+                               f'--tol_scaled {tol_scaled}',
+                               f'--lam_shrink {lam_shrink}',
+                               f'--group_size {group_size}',
+                               f'--overlap_ratio {overlap_ratio}',
+                               f'--max_time {7200}',
+                               f'--inexact_type {inexact_type}',
+                               f'--largedb {largedb}',
+                               f'--gamma_lee {gamma}')
+    inexact_type = 'yd'
+    for loss in ['logit']:
+        for lam_shrink in [0.1, 0.01]:
+            for group_size in [10, 100]:
+                for overlap_ratio in [0.1, 0.2, 0.3]:
+                    for gamma in [0.1, 0.2, 0.3, 0.4, 0.5]:
+                        create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{gamma}',
+                               outdir,
+                               scriptdir,
+                               finishdir,
+                               '1', '4',
+                               script_name,
+                               f'--date {date}',
+                               f'--loss {loss}',
+                               f'--tol {tol}',
+                               f'--tol_scaled {tol_scaled}',
+                               f'--lam_shrink {lam_shrink}',
+                               f'--group_size {group_size}',
+                               f'--overlap_ratio {overlap_ratio}',
+                               f'--max_time {7200}',
+                               f'--inexact_type {inexact_type}',
+                               f'--largedb {largedb}',
+                               f'--gamma_yd {gamma}')
