@@ -118,7 +118,7 @@ if __name__ == "__main__":
                         type=float, help='overlap ratio for each groups')
     parser.add_argument('--tol', default=1e-5, type=float,
                         help='desired accuracy')
-    parser.add_argument('--tol_scaled', default=False, type=lambda x: (
+    parser.add_argument('--tol_scaled', default=True, type=lambda x: (
         str(x).lower() in ['true', '1', 'yes']),
         help='scale the tolearance by stepszie')
     parser.add_argument('--max_time', default=7200,
@@ -167,10 +167,12 @@ if __name__ == "__main__":
                             "leu", "mushrooms", "w8a"]
             if args.debug:
                 print('debug mode!')
-                datasets = ["w8a"]
-                # datasets = ["duke"]
+                # datasets = ["w8a"]
+                datasets = ["duke"]
         else:
-            datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
+            datasets = ["madelon", "gisette"]
+            # datasets = ["madelon", "gisette", "rcv1", "real-sim", "news20"]
+            # datasets = ["rcv1", "real-sim", "news20"]
     else:
         datasets = ['abalone_scale', 'bodyfat_scale', 'cadata', 'cpusmall_scale',
                     'housing_scale', 'pyrim_scale', 'YearPredictionMSD',
@@ -186,4 +188,4 @@ if __name__ == "__main__":
                datasets, '../../../GroupFaRSA/db', config, save_ckpt, milestone)
 
 
-# python runall.py --date 09_17_2021 --inexact_type yd --gamma_yd 0.1 --lam_shrink 0.1 --group_size 100 --overlap_ratio 0.3 --debug True --tol 1e-4
+# python runall.py --date 09_27_2021 --inexact_type yd --gamma_yd 0.1 --lam_shrink 0.1 --group_size 100 --overlap_ratio 0.3 --debug True --tol 1e-4

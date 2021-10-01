@@ -85,7 +85,7 @@ class NatOG:
             self.groups.append(np.array(g))
         # actual dimension
         p = max(groups_flattern) + 1
-        self.A = np.zeros((p, self.lifted_dimension))
+        # self.A = np.zeros((p, self.lifted_dimension))
         rows, cols = [], []
         for (colidx, rowidx) in enumerate(groups_flattern):
             rows.append(rowidx)
@@ -153,7 +153,7 @@ class NatOG:
                 # warnings.warn("Exact solve!")
             elif inexact_pg_computation == 'yd':
                 ckplu1 = (np.sqrt(
-                    6 / (1 + config['inexactpg']['yd']['gamma']) * alphak) - np.sqrt(2 / alphak)) ** 2 / 4
+                    6 / (1 + config['inexactpg']['yd']['gamma'] * alphak)) - np.sqrt(2 / alphak)) ** 2 / 4
             elif inexact_pg_computation == 'lee':
                 primal_val_xk = prox_primal(
                     xk, uk, alphak, self.func(xk))

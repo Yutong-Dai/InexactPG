@@ -2,7 +2,7 @@
 mainsolver:
   accuracy: 1.0e-6
   optim_scaled: False
-  iteration_limits: 10000
+  iteration_limits: 100000
   time_limits: 3600.0 # in seconds
   log: True  # save logs to a file
   print_level: 2 # 0: print nothing; 1: print basics; 2:print everthing

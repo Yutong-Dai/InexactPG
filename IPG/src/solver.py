@@ -110,7 +110,8 @@ class IpgSolver:
         stepsize_init = None
         beta = self.config['linesearch']['beta']
         while True:
-            # if self.iteration >= 1000:
+            # print(f"iteration:{self.iteration:5d} | Fxk:{self.Fxk:.3e}")
+            # if self.iteration >= 51:
             #     print(self.iteration)
             # compute ipg
             xaprox, ykplus1, self.aoptim = self.r.compute_inexact_proximal_gradient_update(
@@ -125,13 +126,15 @@ class IpgSolver:
                 if self.iteration % self.config['mainsolver']['print_every'] == 0:
                     self.print_header()
                 self.print_iteration()
-            self.optim = self.aoptim + np.sqrt(2 * self.r.targap * self.alphak)
+            # the abs is added avoid negetive self.r.gap due numerical cancellation
+            self.optim_ub = self.aoptim + \
+                np.sqrt(2 * np.abs(self.r.gap) * self.alphak)
             if save_ckpt:
                 if self.config['mainsolver']['optim_scaled']:
-                    milestone_scaled = milestone[0] * self.alphak
+                    milestone_scaled = milestone[0] * min(1.0, self.alphak)
                 else:
                     milestone_scaled = milestone[0]
-                if self.optim <= milestone_scaled:
+                if self.optim_ub <= milestone_scaled:
                     nnz, nz = self.r._get_group_structure(xk)
                     info = {'iteration': self.iteration, 'time': self.time_so_far,
                             'x': xk, 'F': self.Fxk, 'nnz': nnz, 'nz': nz,
@@ -139,7 +142,7 @@ class IpgSolver:
                             'fevals': self.fevals, 'gevals': self.gevals, 'aoptim': self.aoptim,
                             'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
                             'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid,
-                            'optim': self.optim
+                            'optim': self.optim_ub
                             }
                     ckpt_tol = milestone.pop(0)
                     ckpt_dir = self.generate_ckpt_dir(save_ckpt_id, ckpt_tol)
@@ -147,10 +150,10 @@ class IpgSolver:
                             "/{}_info.npy".format(self.datasetname), info)
             # check termination
             if self.config['mainsolver']['optim_scaled']:
-                tol_scaled = tol * self.alphak
+                tol_scaled = tol * min(1.0, self.alphak)
             else:
                 tol_scaled = tol
-            if self.optim <= tol_scaled:
+            if self.optim_ub <= tol_scaled:
                 self.status = 0
                 break
 
@@ -162,12 +165,12 @@ class IpgSolver:
                 break
             if self.r.flag == 'correct':
                 self.subsolver_total_correct_iters += 1
-                if self.subsolver_total_correct_iters >= 10:
+                if self.subsolver_total_correct_iters >= 2:
                     self.status = 4
                     break
             if self.r.flag == 'maxiter':
                 self.subsolver_consequtive_maxiter += 1
-                if self.subsolver_consequtive_maxiter == 3:
+                if self.subsolver_consequtive_maxiter == 2:
                     self.status = 3
                     break
             else:
@@ -312,7 +315,7 @@ class IpgSolver:
                 'fevals': self.fevals, 'gevals': self.gevals, 'aoptim': self.aoptim,
                 'n': self.n, 'p': self.p, 'Lambda': self.r.penalty,
                 'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid,
-                'optim': self.optim
+                'optim': self.optim_ub
                 }
 
         ckpt_dir = self.generate_ckpt_dir(
@@ -417,9 +420,9 @@ class IpgSolver:
         elif self.status == 2:
             contents += 'Exit: Time limit reached\n'
         elif self.status == 3:
-            contents += 'Exit: Early stoppiong. (Consequtive subsolver maxiters).\n'
+            contents += 'Exit: Early stoppiong. (2 Consequtive subsolver maxiters).\n'
         elif self.status == 4:
-            contents += 'Exit: Early stoppiong. (10 correction steps cap reached).\n'
+            contents += 'Exit: Early stoppiong. (2 correction steps cap reached).\n'
         print(contents)
         contents += "\nFinal Results\n"
         contents += "=" * 30 + '\n'
@@ -428,7 +431,7 @@ class IpgSolver:
         nnz, nz = self.r._get_group_structure(self.solution)
         contents += f'# zero groups:{"":.>62}{nz:d}\n'
         contents += f'Objective function:{"":.>57}{self.Fxk:8.6e}\n'
-        contents += f'Optimality error:{"":.>59}{self.optim:8.6e}\n'
+        contents += f'Optimality error:{"":.>59}{self.optim_ub:8.6e}\n'
         contents += f'Function evaluations:{"":.>55}{self.fevals:d}\n'
         contents += f'Gradient evaluations:{"":.>55}{self.gevals:d}\n'
 

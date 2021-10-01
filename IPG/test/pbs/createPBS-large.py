@@ -37,15 +37,13 @@ if __name__ == '__main__':
     outdir = "IPG/test/log/cache"
     scriptdir = "IPG/test/"
     finishdir = "/home/yud319/InexactPG/IPG/test/pbs"
-    # date = "09_17_2021"
-    # date = "09_20_2021"
-    date = "09_30_2021"
+    # date = "09_29_2021"
+    date = "09_28_2021"
     tol = 1e-5
-    # tol_scaled = False
     tol_scaled = True
-    largedb = False
+    largedb = True
     use_aoptim = False
-    max_iters = 1e5
+    max_time = 12 * 3600
     if use_aoptim:
         # script_name = 'runall_aoptim.py'
         script_name = 'runall_nocorrection.py'
@@ -57,14 +55,13 @@ if __name__ == '__main__':
     #     for lam_shrink in [0.1, 0.01]:
     #         for group_size in [10, 100]:
     #             for overlap_ratio in [0.1, 0.2, 0.3]:
-    #                 clts = [1e0, 1e1, 1e2, 1e3, 1e4]
-    #                 # clts = [1e0, 1e-1, 1e-2, 1e-3, 1e-4]
+    #                 clts = [1e3]
     #                 for c in clts:
     #                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{c}',
     #                            outdir,
     #                            scriptdir,
     #                            finishdir,
-    #                            '1', '4',
+    #                            '1', '5',
     #                            script_name,
     #                            f'--date {date}',
     #                            f'--loss {loss}',
@@ -73,7 +70,7 @@ if __name__ == '__main__':
     #                            f'--lam_shrink {lam_shrink}',
     #                            f'--group_size {group_size}',
     #                            f'--overlap_ratio {overlap_ratio}',
-    #                            f'--max_time {7200}',
+    #                            f'--max_time {max_time}',
     #                            f'--inexact_type {inexact_type}',
     #                            f'--largedb {largedb}',
     #                            f'--c {c}')
@@ -83,12 +80,12 @@ if __name__ == '__main__':
     #     for lam_shrink in [0.1, 0.01]:
     #         for group_size in [10, 100]:
     #             for overlap_ratio in [0.1, 0.2, 0.3]:
-    #                 for gamma in [0.1, 0.2, 0.3, 0.4, 0.5]:
+    #                 for gamma in [0.5]:
     #                     create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{gamma}',
     #                            outdir,
     #                            scriptdir,
     #                            finishdir,
-    #                            '1', '4',
+    #                            '1', '5',
     #                            script_name,
     #                            f'--date {date}',
     #                            f'--loss {loss}',
@@ -97,7 +94,7 @@ if __name__ == '__main__':
     #                            f'--lam_shrink {lam_shrink}',
     #                            f'--group_size {group_size}',
     #                            f'--overlap_ratio {overlap_ratio}',
-    #                            f'--max_time {7200}',
+    #                            f'--max_time {max_time}',
     #                            f'--inexact_type {inexact_type}',
     #                            f'--largedb {largedb}',
     #                            f'--gamma_lee {gamma}')
@@ -106,12 +103,12 @@ if __name__ == '__main__':
         for lam_shrink in [0.1, 0.01]:
             for group_size in [10, 100]:
                 for overlap_ratio in [0.1, 0.2, 0.3]:
-                    for gamma in [0.1, 0.2, 0.3, 0.4, 0.5]:
+                    for gamma in [0.2]:
                         create(f'{inexact_type}_{loss}_{lam_shrink}_{group_size}_{overlap_ratio}_{gamma}',
                                outdir,
                                scriptdir,
                                finishdir,
-                               '1', '4',
+                               '1', '5',
                                script_name,
                                f'--date {date}',
                                f'--loss {loss}',
@@ -120,7 +117,7 @@ if __name__ == '__main__':
                                f'--lam_shrink {lam_shrink}',
                                f'--group_size {group_size}',
                                f'--overlap_ratio {overlap_ratio}',
-                               f'--max_time {7200}',
+                               f'--max_time {max_time}',
                                f'--inexact_type {inexact_type}',
                                f'--largedb {largedb}',
                                f'--gamma_yd {gamma}')

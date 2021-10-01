@@ -51,21 +51,41 @@ def load_df_from_paths(list_all_npy_path, cols=['datasetid', 'status', 'time', '
         print(f" {count:{formatter}}/{df.shape[0]} instances terminate with status: {code:2d}")
     return df
 
+# def get_all(logdir, date, inexact_type, loss, use_ckpt, tol,
+#             lam_shrink, group_size, overlap_ratio,
+#             excludes=None, param_lst=None):
+#     algo_df_dict = {}
+#     for p in param_lst:
+#             algorithm = f'{inexact_type}-{p}'
+#             print(f'{algorithm}')
+#             paths = create_paths(logdir, date, inexact_type, loss, use_ckpt, tol, 
+#                                  lam_shrink, group_size, overlap_ratio, excludes, p=p)
+#             if paths == []:
+#                 print(' empty')
+#                 df = None
+#             else:
+#                 df = load_df_from_paths(paths)
+#             algo_df_dict[algorithm] = df
+#     return algo_df_dict
+
 def get_all(logdir, date, inexact_type, loss, use_ckpt, tol,
             lam_shrink, group_size, overlap_ratio,
             excludes=None, param_lst=None):
     algo_df_dict = {}
     for p in param_lst:
-            algorithm = f'{inexact_type}-{p}'
-            print(f'{algorithm}')
-            paths = create_paths(logdir, date, inexact_type, loss, use_ckpt, tol, 
+        algorithm = f'{inexact_type}-{p}'
+        print(f'{algorithm}')
+        paths = []
+        for date_ in date:
+            paths_ = create_paths(logdir, date_, inexact_type, loss, use_ckpt, tol, 
                                  lam_shrink, group_size, overlap_ratio, excludes, p=p)
-            if paths == []:
-                print(' empty')
-                df = None
-            else:
-                df = load_df_from_paths(paths)
-            algo_df_dict[algorithm] = df
+            paths += paths_
+        if paths == []:
+            print(' empty')
+            df = None
+        else:
+            df = load_df_from_paths(paths)
+        algo_df_dict[algorithm] = df
     return algo_df_dict
 
 class PerformanceProfile:
