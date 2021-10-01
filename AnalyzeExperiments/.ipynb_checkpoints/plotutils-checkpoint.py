@@ -316,3 +316,21 @@ def prepare_box(df_dict):
         time_ = df_['time'].to_numpy()
         lst.append(time_)
     return lst
+
+def pair_wise_comparison(df1, df2, suffixes_lst):
+    df12_merged = pd.merge(df1, df2, on='datasetid', 
+                           suffixes=(suffixes_lst[0], suffixes_lst[1]), how='left')
+    better12_z = np.sum((df12_merged[f'nz{suffixes_lst[0]}'] - df12_merged[f'nz{suffixes_lst[1]}']) > 0 )
+    same12_z = np.sum((df12_merged[f'nz{suffixes_lst[0]}'] - df12_merged[f'nz{suffixes_lst[1]}']) == 0 ) 
+    worse12_z = np.sum((df12_merged[f'nz{suffixes_lst[0]}'] - df12_merged[f'nz{suffixes_lst[1]}']) < 0 ) 
+    
+    better12_F = np.sum((df12_merged[f'F{suffixes_lst[0]}'] - df12_merged[f'F{suffixes_lst[1]}']) < -1e-8 )
+    same12_F = np.sum(np.abs(df12_merged[f'F{suffixes_lst[0]}'] - df12_merged[f'F{suffixes_lst[1]}']) <=1e-8 ) 
+    worse12_F = np.sum((df12_merged[f'F{suffixes_lst[0]}'] - df12_merged[f'F{suffixes_lst[1]}']) > 1e-8 )     
+
+    print(f"For {suffixes_lst[0]}-{suffixes_lst[1]} comparsion:\n==========================")
+    print(" In terms final F:")
+    print(f"  better:{better12_F} | same:{same12_F} | worse: {worse12_F}")
+    print(" In terms #z:")
+    print(f"  better:{better12_z} | same:{same12_z} | worse: {worse12_z}")
+    return better12_z, same12_z, worse12_z, better12_F, same12_F, worse12_F
