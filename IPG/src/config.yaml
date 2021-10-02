@@ -27,7 +27,7 @@ mainsolver:
 subsolver:
   # available options: PGD / SLEP
   # name: PGD
-  iteration_limits: 5000
+  iteration_limits: 50
   linesearch: True
   warmstart: True # use the iterate and stepsize from the last main iteration as the starting point
   

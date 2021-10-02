@@ -21,6 +21,7 @@ from scipy.io import savemat, loadmat
 from src.lossfunction import LogisticLoss, LeastSquares
 from src.regularizer import NatOG
 from src.solver import IpgSolver
+from src.solverlee import IpgSolverLee
 import src.utils as utils
 from src.params import *
 import yaml
@@ -30,11 +31,12 @@ import numpy as np
 
 
 loss = 'logit'
-datasetName = 'rcv1'
+datasetName = 'w8a'
 fileType = fileTypeDict[datasetName]
 print("Working on: {}...".format(datasetName))
-# dbDir = '/Users/ym/Documents/GroupFaRSA/db/'
-dbDir = '../../../GroupFaRSA/db_big'
+# dbDir = '/Users/ym/Documents/GroupFaRSA/db'
+# dbDir = '../../../GroupFaRSA/db_big'
+dbDir = '../../../GroupFaRSA/db'
 X, y = utils.set_up_xy(datasetName, fileType, dbDir)
 if loss == 'logit':
     f = LogisticLoss(X, y, datasetName)
@@ -98,15 +100,40 @@ alpha_init = 1.0
 # print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
 # # print(info['x'].T)
 
-print("Inexact subprobsolve: yd")
+# print("Inexact subprobsolve: yd")
+# with open('../src/config.yaml', "r") as stream:
+#     config = yaml.load(stream, Loader=yaml.SafeLoader)
+# config['mainsolver']['exact_pg_computation'] = False
+# config['mainsolver']['inexact_pg_computation'] = 'yd'
+# config['inexactpg']['yd']['gamma'] = 0.1
+# # config['subsolver']['iteration_limits'] = 2
+# solver = IpgSolver(f, r, config)
+# info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
+#                     save_ckpt_id=save_ckpt_id, milestone=milestone)
+# print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
+# print(info['x'].T)
+
+
+# ========
+
+print("Mainsover: Lee |  Inexact subprobsolve: lee")
 with open('../src/config.yaml', "r") as stream:
     config = yaml.load(stream, Loader=yaml.SafeLoader)
 config['mainsolver']['exact_pg_computation'] = False
-config['mainsolver']['inexact_pg_computation'] = 'yd'
-config['inexactpg']['yd']['gamma'] = 0.1
-# config['subsolver']['iteration_limits'] = 2
+config['mainsolver']['inexact_pg_computation'] = 'lee'
+solver = IpgSolverLee(f, r, config)
+info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
+                    save_ckpt_id=save_ckpt_id, milestone=milestone)
+print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
+
+
+print("Mainsover: Mine | Inexact subprobsolve: lee")
+with open('../src/config.yaml', "r") as stream:
+    config = yaml.load(stream, Loader=yaml.SafeLoader)
+config['mainsolver']['exact_pg_computation'] = False
+config['mainsolver']['inexact_pg_computation'] = 'lee'
 solver = IpgSolver(f, r, config)
 info = solver.solve(alpha_init=alpha_init, save_ckpt=True,
                     save_ckpt_id=save_ckpt_id, milestone=milestone)
 print(f"time:{info['time']:.3e} | its: {info['iteration']:4d} | subits:{info['subits']:5d} | F:{info['F']:.3e} | nnz:{info['nnz']:4d} | nz:{info['nz']:4d}")
-print(info['x'].T)
+# print(info['x'].T)

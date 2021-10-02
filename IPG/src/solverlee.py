@@ -12,25 +12,20 @@
 # HISTORY:
 # Date      	By 	Comments
 # ----------	---	----------------------------------------------------------
-# 2021-08-23	Y.D	create file. Implement algorithm.
-# 2021-09-17    Y.D Modify the Solver, which will record the best iterate encountered so far.
-                    The best iterate is defined in terms of the newest iterate, where
-                    the subsolver terminates successfully and  the trial iterate is accepted by the linesearch. 
-                    If encounter 2 maxiters/correction steps, then terminate the algorithm
-# 2021-09-29    Y.D Use the new termination  condition for the mainsolver, that is the upper-bound of the chi measure is 
-#                   scaled by the alphak.                    
+# 2021-10-02	Y.D	Implete Lee Algorithm 2 with variant 1            
 '''
+
 import numpy as np
 import datetime
 import time
 import os
 
 
-class IpgSolver:
+class IpgSolverLee:
     def __init__(self, f, r, config):
         self.f = f
         self.r = r
-        self.version = "0.1 (2021-09-17)"
+        self.version = "0.1 (2021-10-02)"
         self.n = self.f.n
         self.p = self.f.p
         self.config = config
@@ -104,7 +99,6 @@ class IpgSolver:
         gradfxk = self.f.grad(xk)
         self.fevals += 1
         self.gevals += 1
-        inexact_pg_computation = self.config['mainsolver']['inexact_pg_computation']
         self.status = 404
         self.subsolver_consequtive_maxiter = 0
         self.subsolver_total_correct_iters = 0
@@ -112,18 +106,37 @@ class IpgSolver:
         stepsize_init = None
         beta = self.config['linesearch']['beta']
         while True:
-            # print(f"iteration:{self.iteration:5d} | Fxk:{self.Fxk:.3e}")
-            # if self.iteration >= 51:
-            #     print(self.iteration)
-            # compute ipg
-            xaprox, ykplus1, self.aoptim = self.r.compute_inexact_proximal_gradient_update(
-                xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration, xref=x_best_so_far)
-            # if self.r.flag == 'lscfail':
-            #     self.status = -2
-            #     break
+            # adjust alpha_k
+            self.bak = 0
+            self.stepsize = 1
+            # print(f"iters:{self.iteration}")
+            while True:
+                xaprox, ykplus1, self.aoptim = self.r.compute_inexact_proximal_gradient_update(
+                    xk, self.alphak, gradfxk, self.config, yk, stepsize_init, iteration=self.iteration, xref=x_best_so_far)
+                # monitor subsolver status
+                if self.r.flag == 'correct':
+                    self.subsolver_total_correct_iters += 1
+                if self.r.flag == 'maxiter':
+                    self.subsolver_consequtive_maxiter += 1
+
+                self.subits += self.r.inner_its
+                xtrial = xaprox
+                fxtrial = self.f.func(xtrial)
+                rxtrial = self.r.rxtrial
+                self.d = xtrial - xk
+                self.d_norm = self.aoptim
+                self.d_norm_sq = self.d_norm ** 2
+                lhs = fxtrial - fxk + rxtrial - rxk
+                rhs = self.config['inexactpg']['lee']['gamma'] * (
+                    np.sum(gradfxk * self.d) + rxtrial - rxk + (0.5 / self.alphak) * self.d_norm_sq)
+                if lhs <= rhs:
+                    break
+                else:
+                    self.bak += 1
+                    self.alphak *= 0.8
             self.time_so_far += time.time() - iteration_start - print_cost
             # print current iteration information
-            self.subits += self.r.inner_its
+
             if self.config['mainsolver']['print_level'] > 0:
                 if self.iteration % self.config['mainsolver']['print_every'] == 0:
                     self.print_header()
@@ -166,12 +179,10 @@ class IpgSolver:
                 self.status = 2
                 break
             if self.r.flag == 'correct':
-                self.subsolver_total_correct_iters += 1
                 if self.subsolver_total_correct_iters >= 2:
                     self.status = 4
                     break
             if self.r.flag == 'maxiter':
-                self.subsolver_consequtive_maxiter += 1
                 if self.subsolver_consequtive_maxiter == 2:
                     self.status = 3
                     break
@@ -181,84 +192,15 @@ class IpgSolver:
 
             # new iteration
             iteration_start = time.time()
+            self.step_take = self.d
+            self.step_take_size = self.aoptim
             self.iteration += 1
-            # line search
-            if self.config['mainsolver']['linesearch']:
-                xtrial = xaprox
-                fxtrial = self.f.func(xtrial)
-                rxtrial = self.r.rxtrial
-                self.bak = 0
-                self.stepsize = 1
-                self.d = xtrial - xk
-                self.d_norm = self.aoptim
-                pass_L_test = True
-                # construct the upper-bound of the directional derivative
-                if inexact_pg_computation == 'yd':
-                    dirder_upper = -((self.d_norm**2 / self.alphak) - np.sqrt
-                                     (2.0 * self.r.targap / self.alphak) * self.d_norm - self.r.targap)
-                elif inexact_pg_computation == 'lee':
-                    dirder_upper = - \
-                        (rxk - rxtrial - np.sum(gradfxk * self.d))
-                else:
-                    dirder_upper = -np.inf
-                const = self.config['linesearch']['eta'] * dirder_upper
-                # begin backtracking
-                while True:
-                    if inexact_pg_computation == 'yd' or inexact_pg_computation == 'lee':
-                        lhs = fxtrial - fxk + rxtrial - rxk
-                        rhs = self.stepsize * const
-                        # if self.r.flag == 'maxiter' or  self.iteration == 1697:
-                        #     print(f"its:{self.iteration:3d} | LHS:{lhs:.4e} | RHS:{rhs:.4e} | LHS-RHS:{lhs-rhs:.4e} | dirder_upper:{dirder_upper:.4e}")
-                        if lhs <= rhs:
-                            self.step_take = xtrial - xk
-                            xk = xtrial
-                            break
-                        if self.stepsize <= 1e-20:
-                            # linesearch failure
-                            # self.status = -1
-                            # print("mainsolver: small stepsize encountered in the linesearch for alphak")
-                            self.step_take = xtrial - xk
-                            xk = xtrial
-                            break
-                        self.bak += 1
-                        self.stepsize *= self.config['linesearch']['xi']
-                        xtrial = xk + self.stepsize * self.d
-                        fxtrial = self.f.func(xtrial)
-                        rxtrial = self.r.func(xtrial)
-                    else:
-                        # test Lipschtiz inequality for exact solve and the schimdt inexact solve
-                        l_lhs = fxtrial - fxk
-                        l_rhs = np.sum(gradfxk * self.d) + 1.0 / \
-                            (2.0 * self.alphak) * (self.d_norm**2)
-                        if (l_lhs <= l_rhs) or (np.abs(l_lhs - l_rhs) <= 1e-15):
-                            self.step_take = xtrial - xk
-                            xk = xtrial
-                        else:
-                            # stay at the current point and reduce alphak, or equivalently enlarge L estimate
-                            pass_L_test = False
-                            self.alphak *= 0.8
-                            fxtrial = self.f.func(xk)
-                            rxtrial = rxk
-                            self.step_take = 0.0
-                        if self.aoptim <= 1e-8:
-                            beta = 1.0
-                        break
-                # # terminate the whole algorithm as linesearch failed
-                # if self.status == -1:
-                #     break
-            else:
-                self.step_take = xaprox - xk
-                xk = xaprox
-                fxtrial = self.f.func(xk)
-                rxtrial = self.r.rxtrial
-                self.bak = 0
-            self.step_take_size = np.sqrt(
-                np.sum(self.step_take * self.step_take))
             # prepare quantities for the next dual iteration
             if self.config['subsolver']['warmstart']:
                 yk = ykplus1
                 stepsize_init = self.r.stepsize
-
+            # move to new point
+            xk = xtrial
             # print line search
             print_start = time.time()
             if self.config['mainsolver']['print_level'] > 0:
@@ -266,32 +208,27 @@ class IpgSolver:
             print_cost = time.time() - print_start
 
             # update parameter for two in
-            if self.config['mainsolver']['linesearch'] and pass_L_test:
-                if self.config['mainsolver']['stepsize_strategy'] == "frac":
-                    if self.bak > 0:
-                        self.alphak *= 0.8
-                elif self.config['mainsolver']['stepsize_strategy'] == "model":
-                    # L_k_hat makes the model decreases match with the actual decreases.
-                    # print(self.iteration, self.step_take_size)
-                    L_k = 1 / self.alphak
-                    L_k_hat = 2 * \
-                        (fxtrial - fxk - np.sum(gradfxk * self.step_take)) / \
-                        (self.step_take_size**2)
-                    L_k = max(2 * L_k, min(1e3 * L_k, L_k_hat))
-                    L_kplus1 = max(1e-3, 1e-3 * L_k, L_k_hat)
-                    self.alphak = 1.0 / L_kplus1
-                elif self.config['mainsolver']['stepsize_strategy'] == "heuristic":
-                    if self.bak == 0:
-                        # add a safeguard
-                        self.alphak = min(
-                            self.alphak * beta, 100)
-                    else:
-                        self.alphak = max(0.8 * self.alphak, 1e-20)
-                elif self.config['mainsolver']['stepsize_strategy'] == "const":
-                    pass
-                else:
-                    raise ValueError(
-                        f"Unrecognized stepsize_strategy value: {self.config['mainsolver']['stepsize_strategy']}")
+
+            if self.config['mainsolver']['stepsize_strategy'] == "model":
+                # L_k_hat makes the model decreases match with the actual decreases.
+                # print(self.iteration, self.step_take_size)
+                L_k = 1 / self.alphak
+                L_k_hat = 2 * \
+                    (fxtrial - fxk - np.sum(gradfxk * self.step_take)) / \
+                    (self.step_take_size**2)
+                L_k = max(2 * L_k, min(1e3 * L_k, L_k_hat))
+                L_kplus1 = max(1e-3, 1e-3 * L_k, L_k_hat)
+                self.alphak = 1.0 / L_kplus1
+            elif self.config['mainsolver']['stepsize_strategy'] == "heuristic":
+                if self.bak == 0:
+                    # add a safeguard
+                    self.alphak = min(
+                        self.alphak * beta, 100)
+            elif self.config['mainsolver']['stepsize_strategy'] == "const":
+                pass
+            else:
+                raise ValueError(
+                    f"Unrecognized stepsize_strategy value: {self.config['mainsolver']['stepsize_strategy']}")
 
             # move to new iterate
             fxk = fxtrial
