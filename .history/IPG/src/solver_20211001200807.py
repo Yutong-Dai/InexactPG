@@ -4,7 +4,7 @@
 # Created Date: 2021-08-23 11:28
 # Author: Yutong Dai yutongdai95@gmail.com
 # -----
-# Last Modified: 2021-10-01 8:09
+# Last Modified: 2021-10-01 8:08
 # Modified By: Yutong Dai yutongdai95@gmail.com
 #
 # This code is published under the MIT License.
@@ -318,11 +318,11 @@ class IpgSolver:
                 'K': self.r.K, 'subits': self.subits, 'datasetid': self.datasetid,
                 'optim': self.optim_ub
                 }
-        if save_ckpt:
-            ckpt_dir = self.generate_ckpt_dir(
-                save_ckpt_id, self.config['mainsolver']['accuracy'])
-            np.save(ckpt_dir +
-                    "/{}_info.npy".format(self.datasetname), info)
+
+        ckpt_dir = self.generate_ckpt_dir(
+            save_ckpt_id, self.config['mainsolver']['accuracy'])
+        np.save(ckpt_dir +
+                "/{}_info.npy".format(self.datasetname), info)
         return info
 
     def print_problem(self):
