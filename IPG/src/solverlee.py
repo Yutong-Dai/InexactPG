@@ -25,7 +25,7 @@ class IpgSolverLee:
     def __init__(self, f, r, config):
         self.f = f
         self.r = r
-        self.version = "0.1 (2021-10-02)"
+        self.version = "0.1 (2021-10-02) Lee Version"
         self.n = self.f.n
         self.p = self.f.p
         self.config = config
@@ -58,6 +58,7 @@ class IpgSolverLee:
         return ckpt_dir
 
     def solve(self, x_init=None, alpha_init=None, save_ckpt=False, save_ckpt_id=None, milestone=None):
+        assert self.config['mainsolver']['inexact_pg_computation'] == 'lee', "the subsolver can only be set to lee"
         self.datasetid = None
         # process argument
         if save_ckpt:

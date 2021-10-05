@@ -89,14 +89,14 @@ def get_all(logdir, date, inexact_type, loss, use_ckpt, tol,
     return algo_df_dict
 
 class PerformanceProfile:
-    def __init__(self, algo_df_dic, failcode=-2, overwriteFailed=True):
+    def __init__(self, algo_df_dic, failcode=[-2], overwriteFailed=True):
         self.algo_lst = [*algo_df_dic.keys()]
         self.algo_df_dic = deepcopy(algo_df_dic)
         all_failed = algo_df_dic[self.algo_lst[0]]['datasetid'].to_numpy()
         for algo in self.algo_lst:
             frame = self.algo_df_dic[algo]
             if overwriteFailed:
-                failed_idx = frame['status'] == failcode
+                failed_idx = frame['status'].isin(failcode)
                 all_failed = np.intersect1d(all_failed, frame[failed_idx]['datasetid'].to_numpy())
                 frame.loc[failed_idx, 'time'] = np.inf
                 frame.loc[failed_idx, 'iteration'] = np.inf
@@ -126,9 +126,11 @@ class PerformanceProfile:
         base = self.algo_df_dic[self.algo_lst[0]]
         num_records = base.shape[0]
         datasetid = base['datasetid'].to_numpy()
+        datasetid.sort()
         for i in range(1, len(self.algo_lst)):
             frame = self.algo_df_dic[self.algo_lst[i]]
             datasetid_candidate = frame['datasetid'].to_numpy()
+            datasetid_candidate.sort()
             if frame.shape[0] != num_records:
                 msg = f'Algortithm {self.algo_lst[0]} has {num_records} records.\n'
                 msg += f'Algortithm {self.algo_lst[i]} has {frame.shape[0]} records.\n'
@@ -136,7 +138,7 @@ class PerformanceProfile:
                 raise ValueError(msg)
             for j in range(len(datasetid)):
                 if datasetid[j] != datasetid_candidate[j]:
-                    msg = f"compare {datasetid[i]} with {frame['datasetid'][i]} \n"
+                    msg = f"compare {datasetid[j]} with {datasetid_candidate[j]} \n"
                     msg += 'unmatched instance'
                     raise ValueError(msg)
         print(f"After subsetting, {num_records} instances are kept.")
